@@ -64,6 +64,7 @@ def main_worker(args, config):
     counter = 0
     evaluation = torchmetrics.Accuracy(task='multiclass', num_classes=nclass)
 
+    best_acc = 0.0
     for idx in range(epoch):
 
         net.train()
@@ -94,7 +95,11 @@ def main_worker(args, config):
             test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
             res.append([val_loss, val_acc, test_acc])
 
-            print(idx, val_loss, val_acc, test_acc)
+            if val_acc > best_acc:
+                best_acc = val_acc
+                best_test = test_acc
+
+            print(idx, val_loss, val_acc, test_acc, best_test)
 
             if val_loss < min_loss:
                 min_loss = val_loss
