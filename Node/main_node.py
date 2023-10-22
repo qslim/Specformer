@@ -53,7 +53,7 @@ def main_worker(args, config):
         train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
     nfeat = x.size(1)
-    net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
+    net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm, num_eigen=e.shape[0]).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     print(count_parameters(net))
