@@ -15,7 +15,7 @@ cora:
     nlayer: 2
     num_heads: 2
     hidden_dim: 32
-    epoch: 2000
+    epoch: 5000
     lr: 0.0002
     weight_decay: 0.0001
     tran_dropout: 0.2
