@@ -124,7 +124,8 @@ def load_data(dataset_str):
 
 
 def eig_dgl_adj_sparse(g, sm=0, lm=0):
-    A = g.adj(scipy_fmt='csr')
+    # A = g.adj(scipy_fmt='csr')
+    A = g.adj_external(scipy_fmt='csr')
     deg = np.array(A.sum(axis=0)).flatten()
     D_ = sp.sparse.diags(deg ** -0.5)
 
