@@ -10,7 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchmetrics
 from sklearn.metrics import roc_auc_score, mean_absolute_error, accuracy_score, r2_score
-from model_node import Specformer
+# from model_node import Specformer
+from eigen_trunc import Specformer
 from utils import count_parameters, init_params, seed_everything, get_split
 
 
