@@ -10,9 +10,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torchmetrics
 from sklearn.metrics import roc_auc_score, mean_absolute_error, accuracy_score, r2_score
-# from model_node import Specformer
-from eigen_trunc import Specformer
 from utils import count_parameters, init_params, seed_everything, get_split
+from result_stat.result_append import result_append
 
 
 def main_worker(args, config):
@@ -54,6 +53,12 @@ def main_worker(args, config):
         train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
     nfeat = x.size(1)
+    if args.model == 'eigen_trunc':
+        from eigen_trunc import Specformer
+    elif args.model == 'specformer':
+        from model_node import Specformer
+    else:
+        raise NotImplementedError
     net = Specformer(u.shape[0], nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
@@ -104,10 +109,11 @@ def main_worker(args, config):
                 counter += 1
 
         if counter == 200:
-            max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
-            max_acc2 = sorted(res, key=lambda x: x[1], reverse=True)[0][-1]
-            print(max_acc1, max_acc2)
             break
+
+    max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
+    max_acc2 = sorted(res, key=lambda x: x[1], reverse=True)[0][-1]
+    return max_acc1, max_acc2
 
 
 if __name__ == '__main__':
@@ -116,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--cuda', type=int, default=0)
     parser.add_argument('--dataset', default='cora')
     parser.add_argument('--image', type=int, default=0)
+    parser.add_argument('--model', default='eigen_trunc')
 
     args = parser.parse_args()
     
@@ -124,5 +131,26 @@ if __name__ == '__main__':
     else:
         config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
-    main_worker(args, config)
+    _acc1, _acc2 = [], []
+    seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    config['dataset'] = args.dataset
+    config['cuda'] = args.cuda
+    config['seeds'] = seeds
+    config['model'] = args.model
+    config['rank'] = 0
+    for seed in seeds:
+        args.seed = seed
+        acc1, acc2 = main_worker(args, config)
+        acc1, acc2 = acc1 * 100.0, acc2 * 100.0
+        print(config)
+        print(acc1, acc2)
+        _acc1.append(acc1)
+        _acc2.append(acc2)
+    _acc1, _acc2 = np.array(_acc1, dtype=float), np.array(_acc2, dtype=float)
+    ACC1 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc1), np.std(_acc1))
+    ACC2 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc2), np.std(_acc2))
+    print("Mean over {} run".format(len(seeds)), "Acc1:" + ACC1, "Auc2:" + ACC2)
+
+    result_append(ACC1, ACC2, config)
+
 
