@@ -17,8 +17,8 @@ from result_stat.result_append import result_append
 def main_worker(args, config):
     print(args, config)
     seed_everything(args.seed)
-    device = 'cuda:{}'.format(args.cuda)
-    torch.cuda.set_device(args.seed)
+    # device = 'cuda:{}'.format(args.cuda)
+    # torch.cuda.set_device(args.seed)
 
     epoch = config['epoch']
     lr = config['lr']
