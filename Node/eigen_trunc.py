@@ -65,12 +65,13 @@ class Specformer(nn.Module):
         else:
             self.layers = nn.ModuleList([SpecLayer(2, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
 
-        self.filter = nn.Parameter(torch.empty((num_eigen, 1)))
-        nn.init.normal_(self.filter, mean=1.0, std=0.0)
+        # self.filter = nn.Parameter(torch.empty((num_eigen, 1)))
+        # nn.init.normal_(self.filter, mean=1.0, std=0.0)
         # nn.init.kaiming_normal_(self.filter)
         # nn.init.kaiming_uniform_(self.filter, a=math.sqrt(5))
         # nn.init.xavier_uniform_(self.filter)
         # nn.init.xavier_normal_(self.filter)
+        self.filter = nn.Parameter(torch.ones((num_eigen, 1)))
         print('num_eigen:', num_eigen)
 
     def forward(self, e, u, x):
