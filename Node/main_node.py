@@ -74,19 +74,19 @@ def main_worker(args, config):
 
         net.train()
         optimizer.zero_grad()
-        logits = net(e, u, x)
+        logits, filter = net(e, u, x)
 
         if 'signal' in args.dataset:
             logits = logits.view(y.size())
             loss = torch.square((logits[mask] - y[mask])).sum()
         else:
-            loss = F.cross_entropy(logits[train], y[train]) 
+            loss = F.cross_entropy(logits[train], y[train])
 
         loss.backward()
         optimizer.step()
 
         net.eval()
-        logits = net(e, u, x)
+        logits, filter = net(e, u, x)
 
         if 'signal' in args.dataset:
             logits = logits.view(y.size())
@@ -108,12 +108,12 @@ def main_worker(args, config):
             else:
                 counter += 1
 
-        if counter == 200:
+        if counter == 500:
             break
 
     max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
     max_acc2 = sorted(res, key=lambda x: x[1], reverse=True)[0][-1]
-    return max_acc1, max_acc2
+    return max_acc1, max_acc2, filter
 
 
 if __name__ == '__main__':
@@ -138,14 +138,28 @@ if __name__ == '__main__':
     config['seeds'] = seeds
     config['model'] = args.model
     config['rank'] = 0
+
+    import wandb
+    wandb.login()
     for seed in seeds:
         args.seed = seed
-        acc1, acc2 = main_worker(args, config)
+        acc1, acc2, filter = main_worker(args, config)
         acc1, acc2 = acc1 * 100.0, acc2 * 100.0
         print(config)
         print(acc1, acc2)
         _acc1.append(acc1)
         _acc2.append(acc2)
+
+        run = wandb.init(
+            # Set the project where this run will be logged
+            project="filter_viz",
+            # Track hyperparameters and run metadata
+            config=config,
+        )
+        for i in range(filter.shape[0]):
+            # print(filter[i].item())
+            wandb.log({args.model + str(seed): filter[i].item()})
+
     _acc1, _acc2 = np.array(_acc1, dtype=float), np.array(_acc2, dtype=float)
     ACC1 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc1), np.std(_acc1))
     ACC2 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc2), np.std(_acc2))

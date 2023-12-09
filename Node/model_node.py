@@ -145,8 +145,8 @@ class Specformer(nn.Module):
             h = conv(basic_feats)
 
         if self.norm == 'none':
-            return h
+            return h, new_e[:, 0]
         else:
             h = self.feat_dp2(h)
             h = self.classify(h)
-            return h
+            return h, new_e[:, 0]

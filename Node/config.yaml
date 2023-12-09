@@ -12,15 +12,15 @@ signal:
     norm: 'none'
 cora:
     nclass: 7
-    nlayer: 2
-    num_heads: 2
-    hidden_dim: 32
-    epoch: 5000
-    lr: 0.0002
+    nlayer: 3
+    num_heads: 1
+    hidden_dim: 64
+    epoch: 10000
+    lr: 0.005
     weight_decay: 0.0001
-    tran_dropout: 0.2
-    feat_dropout: 0.6
-    prop_dropout: 0.2
+    tran_dropout: 0.5
+    feat_dropout: 0.5
+    prop_dropout: 0.5
     norm: 'none'
 citeseer:
     nclass: 6

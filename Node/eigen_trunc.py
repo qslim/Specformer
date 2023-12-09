@@ -66,7 +66,11 @@ class Specformer(nn.Module):
             self.layers = nn.ModuleList([SpecLayer(2, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
 
         self.filter = nn.Parameter(torch.empty((num_eigen, 1)))
-        nn.init.normal_(self.filter, mean=0.0, std=0.01)
+        nn.init.normal_(self.filter, mean=1.0, std=0.0)
+        # nn.init.kaiming_normal_(self.filter)
+        # nn.init.kaiming_uniform_(self.filter, a=math.sqrt(5))
+        # nn.init.xavier_uniform_(self.filter)
+        # nn.init.xavier_normal_(self.filter)
         print('num_eigen:', num_eigen)
 
     def forward(self, e, u, x):
@@ -81,17 +85,18 @@ class Specformer(nn.Module):
             h = self.feat_dp1(x)
             h = self.linear_encoder(h)
 
+        filter = self.filter
         for conv in self.layers:
             basic_feats = [h]
             utx = ut @ h
-            basic_feats.append(u @ (self.filter * utx))  # [N, d]
+            basic_feats.append(u @ (filter * utx))  # [N, d]
             basic_feats = torch.stack(basic_feats, axis=1)
             h = conv(basic_feats)
 
         if self.norm == 'none':
-            return h
+            return h, filter
         else:
             h = self.feat_dp2(h)
             h = self.classify(h)
-            return h
+            return h, filter
 
