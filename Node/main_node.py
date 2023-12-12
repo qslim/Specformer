@@ -120,7 +120,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--cuda', type=int, default=0)
-    parser.add_argument('--dataset', default='cora')
+    parser.add_argument('--dataset', default='citeseer')
     parser.add_argument('--image', type=int, default=0)
     parser.add_argument('--model', default='eigen_trunc')
 
@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
         run = wandb.init(
             # Set the project where this run will be logged
-            project="filter_viz",
+            project=args.dataset,
             # Track hyperparameters and run metadata
             config=config,
         )
