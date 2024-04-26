@@ -42,6 +42,28 @@ class FeedForwardNetwork(nn.Module):
         return x
 
 
+class Transformer(nn.Module):
+    def __init__(self, embed_dim, nheads, dropout):
+        super(Transformer, self).__init__()
+        self.mha_norm = nn.LayerNorm(embed_dim)
+        self.ffn_norm = nn.LayerNorm(embed_dim)
+        self.mha_dropout = nn.Dropout(dropout)
+        self.ffn_dropout = nn.Dropout(dropout)
+        self.mha = nn.MultiheadAttention(embed_dim, nheads, dropout)
+        self.ffn = FeedForwardNetwork(embed_dim, embed_dim, embed_dim)
+
+    def forward(self, x):
+        mha_x = self.mha_norm(x)
+        mha_x, attn = self.mha(mha_x, mha_x, mha_x)
+        x = x + self.mha_dropout(mha_x)
+
+        ffn_x = self.ffn_norm(x)
+        ffn_x = self.ffn(ffn_x)
+        x = x + self.ffn_dropout(ffn_x)
+
+        return x
+
+
 class SpecLayer(nn.Module):
 
     def __init__(self, nbases, ncombines, prop_dropout=0.0, norm='none',
@@ -62,21 +84,10 @@ class SpecLayer(nn.Module):
         else:  # Others
             self.norm = None
 
-        self.mha_norm = nn.LayerNorm(ncombines)
-        self.ffn_norm = nn.LayerNorm(ncombines)
-        self.mha_dropout = nn.Dropout(tran_dropout)
-        self.ffn_dropout = nn.Dropout(tran_dropout)
-        self.mha = nn.MultiheadAttention(ncombines, nheads, tran_dropout)
-        self.ffn = FeedForwardNetwork(ncombines, ncombines, ncombines)
+        self.transformer = Transformer(ncombines, nheads, tran_dropout)
 
     def forward(self, x):
-        mha_x = self.mha_norm(x)
-        mha_x, attn = self.mha(mha_x, mha_x, mha_x)
-        x = x + self.mha_dropout(mha_x)
-
-        ffn_x = self.ffn_norm(x)
-        ffn_x = self.ffn(ffn_x)
-        x = x + self.ffn_dropout(ffn_x)
+        x = self.transformer(x)
 
         # x = self.prop_dropout(x) * self.weight      # [N, m, d] * [1, m, d]
         # x = torch.sum(x, dim=1)
@@ -113,12 +124,7 @@ class Specformer(nn.Module):
         self.eig_encoder = SineEncoding(hidden_dim)
         self.decoder = nn.Linear(hidden_dim, 1)
 
-        self.mha_norm = nn.LayerNorm(hidden_dim)
-        self.ffn_norm = nn.LayerNorm(hidden_dim)
-        self.mha_dropout = nn.Dropout(tran_dropout)
-        self.ffn_dropout = nn.Dropout(tran_dropout)
-        self.mha = nn.MultiheadAttention(hidden_dim, nheads, tran_dropout)
-        self.ffn = FeedForwardNetwork(hidden_dim, hidden_dim, hidden_dim)
+        self.transformer = Transformer(hidden_dim, nheads, tran_dropout)
 
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
@@ -147,13 +153,7 @@ class Specformer(nn.Module):
 
         eig = self.eig_encoder(e)  # [N, d]
 
-        mha_eig = self.mha_norm(eig)
-        mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
-        eig = eig + self.mha_dropout(mha_eig)
-
-        ffn_eig = self.ffn_norm(eig)
-        ffn_eig = self.ffn(ffn_eig)
-        eig = eig + self.ffn_dropout(ffn_eig)
+        eig = self.transformer(eig)
 
         new_e = self.decoder(eig)  # [N, m]
 
