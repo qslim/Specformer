@@ -48,18 +48,18 @@ class SpecLayer(nn.Module):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
 
-        if norm == 'none':
+        if norm == 'none': 
             self.weight = nn.Parameter(torch.ones((1, nbases, ncombines)))
         else:
             self.weight = nn.Parameter(torch.empty((1, nbases, ncombines)))
             nn.init.normal_(self.weight, mean=0.0, std=0.01)
 
-        if norm == 'layer':   # Arxiv
+        if norm == 'layer':    # Arxiv
             self.norm = nn.LayerNorm(ncombines)
         elif norm == 'batch':  # Penn
             self.norm = nn.BatchNorm1d(ncombines)
         else:                  # Others
-            self.norm = None
+            self.norm = None 
 
     def forward(self, x):
         x = self.prop_dropout(x) * self.weight      # [N, m, d] * [1, m, d]
@@ -83,7 +83,7 @@ class Specformer(nn.Module):
         self.nlayer = nlayer
         self.nheads = nheads
         self.hidden_dim = hidden_dim
-
+        
         self.feat_encoder = nn.Sequential(
             nn.Linear(nfeat, hidden_dim),
             nn.ReLU(),
@@ -110,7 +110,7 @@ class Specformer(nn.Module):
             self.layers = nn.ModuleList([SpecLayer(nheads+1, nclass, prop_dropout, norm=norm) for i in range(nlayer)])
         else:
             self.layers = nn.ModuleList([SpecLayer(nheads+1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
-
+        
 
     def forward(self, e, u, x):
         N = e.size(0)
@@ -125,11 +125,10 @@ class Specformer(nn.Module):
             h = self.linear_encoder(h)
 
         eig = self.eig_encoder(e)   # [N, d]
-        # eig = self.eig_encoder(e) + self.linear_encoder(x)
 
         mha_eig = self.mha_norm(eig)
         mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
-        eig = eig + self.mha_dropout(mha_eig + self.linear_encoder(x))
+        eig = eig + self.mha_dropout(mha_eig)
 
         ffn_eig = self.ffn_norm(eig)
         ffn_eig = self.ffn(ffn_eig)
@@ -151,3 +150,4 @@ class Specformer(nn.Module):
             h = self.feat_dp2(h)
             h = self.classify(h)
             return h
+

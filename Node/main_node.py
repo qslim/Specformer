@@ -108,7 +108,7 @@ def main_worker(args, config):
             else:
                 counter += 1
 
-        if counter == 500:
+        if counter == 200:
             break
 
     max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
@@ -132,7 +132,7 @@ if __name__ == '__main__':
         config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
-    seeds = [0]
+    seeds = [1]
     config['dataset'] = args.dataset
     config['cuda'] = args.cuda
     config['seeds'] = seeds
