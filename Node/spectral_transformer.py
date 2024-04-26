@@ -27,21 +27,6 @@ class SineEncoding(nn.Module):
         return self.eig_w(eeig)
 
 
-class FeedForwardNetwork(nn.Module):
-
-    def __init__(self, input_dim, hidden_dim, output_dim):
-        super(FeedForwardNetwork, self).__init__()
-        self.layer1 = nn.Linear(input_dim, hidden_dim)
-        self.gelu = nn.GELU()
-        self.layer2 = nn.Linear(hidden_dim, output_dim)
-
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.gelu(x)
-        x = self.layer2(x)
-        return x
-
-
 class Transformer(nn.Module):
     def __init__(self, embed_dim, nheads, dropout):
         super(Transformer, self).__init__()
@@ -50,7 +35,11 @@ class Transformer(nn.Module):
         self.mha_dropout = nn.Dropout(dropout)
         self.ffn_dropout = nn.Dropout(dropout)
         self.mha = nn.MultiheadAttention(embed_dim, nheads, dropout)
-        self.ffn = FeedForwardNetwork(embed_dim, embed_dim, embed_dim)
+        self.ffn = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim),
+            nn.GELU(),
+            nn.Linear(embed_dim, embed_dim),
+        )
 
     def forward(self, x):
         mha_x = self.mha_norm(x)
@@ -61,18 +50,6 @@ class Transformer(nn.Module):
         ffn_x = self.ffn(ffn_x)
         x = x + self.ffn_dropout(ffn_x)
 
-        return x
-
-
-class SpecLayer(nn.Module):
-
-    def __init__(self, nbases, ncombines, prop_dropout=0.0, norm='none',
-                 nheads=1, tran_dropout=0.0):
-        super(SpecLayer, self).__init__()
-        self.transformer = Transformer(ncombines, nheads, tran_dropout)
-
-    def forward(self, x):
-        x = self.transformer(x)
         return x
 
 
@@ -105,20 +82,17 @@ class Specformer(nn.Module):
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
         if norm == 'none':
-            self.layers = nn.ModuleList(
-                [SpecLayer(nheads + 1, nclass, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout) for i
-                 in range(nlayer)])
+            layer_dim = nclass
             self.norm = None
         else:
-            self.layers = nn.ModuleList(
-                [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout)
-                 for i in range(nlayer)])
+            layer_dim = hidden_dim
             if norm == 'layer':  # Arxiv
                 self.norm = nn.LayerNorm(hidden_dim)
             elif norm == 'batch':  # Penn
                 self.norm = nn.BatchNorm1d(hidden_dim)
             else:  # Others
                 self.norm = None
+        self.layers = nn.ModuleList([Transformer(layer_dim, nheads, prop_dropout) for i in range(nlayer)])
     
     def forward(self, e, u, x):
         N = e.size(0)
