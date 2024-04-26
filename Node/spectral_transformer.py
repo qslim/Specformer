@@ -111,7 +111,7 @@ class Specformer(nn.Module):
         self.classify = nn.Linear(hidden_dim, nclass)
 
         self.eig_encoder = SineEncoding(hidden_dim)
-        self.decoder = nn.Linear(hidden_dim, nheads)
+        self.decoder = nn.Linear(hidden_dim, 1)
 
         self.mha_norm = nn.LayerNorm(hidden_dim)
         self.ffn_norm = nn.LayerNorm(hidden_dim)
@@ -160,12 +160,8 @@ class Specformer(nn.Module):
         x = h
 
         for conv in self.layers:
-            basic_feats = []
             utx = ut @ h
-            for i in range(self.nheads):
-                basic_feats.append(new_e[:, i].unsqueeze(1) * utx)  # [N, d]
-            basic_feats = torch.stack(basic_feats, axis=1).squeeze()  # [N, m, d]
-            h = conv(basic_feats)
+            h = conv(new_e * utx)
 
             # h = u @ h
             h = self.gelu(u @ h)
