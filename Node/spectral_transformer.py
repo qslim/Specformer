@@ -69,24 +69,10 @@ class SpecLayer(nn.Module):
     def __init__(self, nbases, ncombines, prop_dropout=0.0, norm='none',
                  nheads=1, tran_dropout=0.0):
         super(SpecLayer, self).__init__()
-        self.prop_dropout = nn.Dropout(prop_dropout)
-
-        if norm == 'layer':  # Arxiv
-            self.norm = nn.LayerNorm(ncombines)
-        elif norm == 'batch':  # Penn
-            self.norm = nn.BatchNorm1d(ncombines)
-        else:  # Others
-            self.norm = None
-
         self.transformer = Transformer(ncombines, nheads, tran_dropout)
 
     def forward(self, x):
         x = self.transformer(x)
-
-        if self.norm is not None:
-            x = self.norm(x)
-            x = F.relu(x)
-
         return x
 
 
@@ -96,7 +82,6 @@ class Specformer(nn.Module):
                  tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
         super(Specformer, self).__init__()
 
-        self.norm = norm
         self.nfeat = nfeat
         self.nlayer = nlayer
         self.nheads = nheads
@@ -123,18 +108,23 @@ class Specformer(nn.Module):
             self.layers = nn.ModuleList(
                 [SpecLayer(nheads + 1, nclass, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout) for i
                  in range(nlayer)])
+            self.norm = None
         else:
             self.layers = nn.ModuleList(
                 [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout)
                  for i in range(nlayer)])
-
-        self.gelu = nn.GELU()
+            if norm == 'layer':  # Arxiv
+                self.norm = nn.LayerNorm(hidden_dim)
+            elif norm == 'batch':  # Penn
+                self.norm = nn.BatchNorm1d(hidden_dim)
+            else:  # Others
+                self.norm = None
     
     def forward(self, e, u, x):
         N = e.size(0)
         ut = u.permute(1, 0)
 
-        if self.norm == 'none':
+        if self.norm is None:
             h = self.feat_dp1(x)
             h = self.feat_encoder(h)
             h = self.feat_dp2(h)
@@ -154,12 +144,17 @@ class Specformer(nn.Module):
             utx = ut @ h
             h = conv(new_e * utx)
 
-            # h = u @ h
-            h = self.gelu(u @ h)
+            h = u @ h
+
+            if self.norm is None:
+                h = F.gelu(h)
+            else:
+                h = self.norm(h)
+                h = F.relu(h)
 
         h = h + x
 
-        if self.norm == 'none':
+        if self.norm is None:
             return h
         else:
             h = self.feat_dp2(h)
