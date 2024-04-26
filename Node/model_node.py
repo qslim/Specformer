@@ -125,10 +125,11 @@ class Specformer(nn.Module):
             h = self.linear_encoder(h)
 
         eig = self.eig_encoder(e)   # [N, d]
+        # eig = self.eig_encoder(e) + self.linear_encoder(x)
 
         mha_eig = self.mha_norm(eig)
         mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
-        eig = eig + self.mha_dropout(mha_eig)
+        eig = eig + self.mha_dropout(mha_eig + self.linear_encoder(x))
 
         ffn_eig = self.ffn_norm(eig)
         ffn_eig = self.ffn(ffn_eig)

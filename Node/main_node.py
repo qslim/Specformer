@@ -120,9 +120,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--cuda', type=int, default=0)
-    parser.add_argument('--dataset', default='citeseer')
+    parser.add_argument('--dataset', default='cora')
     parser.add_argument('--image', type=int, default=0)
-    parser.add_argument('--model', default='eigen_trunc')
+    parser.add_argument('--model', default='specformer')
 
     args = parser.parse_args()
     
@@ -149,16 +149,6 @@ if __name__ == '__main__':
         print(acc1, acc2)
         _acc1.append(acc1)
         _acc2.append(acc2)
-
-        run = wandb.init(
-            # Set the project where this run will be logged
-            project=args.dataset,
-            # Track hyperparameters and run metadata
-            config=config,
-        )
-        for i in range(filter.shape[0]):
-            # print(filter[i].item())
-            wandb.log({args.model + str(seed): filter[i].item()})
 
     _acc1, _acc2 = np.array(_acc1, dtype=float), np.array(_acc2, dtype=float)
     ACC1 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc1), np.std(_acc1))
