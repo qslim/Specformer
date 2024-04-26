@@ -71,12 +71,6 @@ class SpecLayer(nn.Module):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
 
-        if norm == 'none':
-            self.weight = nn.Parameter(torch.ones((1, nbases, ncombines)))
-        else:
-            self.weight = nn.Parameter(torch.empty((1, nbases, ncombines)))
-            nn.init.normal_(self.weight, mean=0.0, std=0.01)
-
         if norm == 'layer':  # Arxiv
             self.norm = nn.LayerNorm(ncombines)
         elif norm == 'batch':  # Penn
@@ -88,9 +82,6 @@ class SpecLayer(nn.Module):
 
     def forward(self, x):
         x = self.transformer(x)
-
-        # x = self.prop_dropout(x) * self.weight      # [N, m, d] * [1, m, d]
-        # x = torch.sum(x, dim=1)
 
         if self.norm is not None:
             x = self.norm(x)
