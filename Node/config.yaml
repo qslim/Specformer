@@ -84,9 +84,9 @@ squirrel:
     norm: 'none'
 actor:
     nclass: 5
-    nlayer: 2
+    nlayer: 3
     num_heads: 1
-    hidden_dim: 32
+    hidden_dim: 16
     epoch: 2000
     lr: 0.0002
     weight_decay: 0.0001
