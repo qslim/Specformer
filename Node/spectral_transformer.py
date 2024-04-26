@@ -131,6 +131,8 @@ class Specformer(nn.Module):
                 [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout)
                  for i in range(nlayer)])
 
+        self.gelu = nn.GELU()
+    
     def forward(self, e, u, x):
         N = e.size(0)
         ut = u.permute(1, 0)
@@ -165,7 +167,8 @@ class Specformer(nn.Module):
             basic_feats = torch.stack(basic_feats, axis=1).squeeze()  # [N, m, d]
             h = conv(basic_feats)
 
-            h = u @ h
+            # h = u @ h
+            h = self.gelu(u @ h)
 
         h = h + x
 
