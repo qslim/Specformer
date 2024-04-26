@@ -65,13 +65,18 @@ class Specformer(nn.Module):
         self.hidden_dim = hidden_dim
 
         self.feat_encoder = nn.Sequential(
+            nn.Dropout(feat_dropout),
             nn.Linear(nfeat, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, nclass),
+            nn.Dropout(feat_dropout),
         )
 
         # for arxiv & penn
-        self.linear_encoder = nn.Linear(nfeat, hidden_dim)
+        self.linear_encoder = nn.Sequential(
+            nn.Dropout(feat_dropout),
+            nn.Linear(nfeat, hidden_dim),
+        )
         self.classify = nn.Linear(hidden_dim, nclass)
 
         self.eig_encoder = SineEncoding(hidden_dim)
@@ -79,8 +84,7 @@ class Specformer(nn.Module):
 
         self.transformer = Transformer(hidden_dim, nheads, tran_dropout)
 
-        self.feat_dp1 = nn.Dropout(feat_dropout)
-        self.feat_dp2 = nn.Dropout(feat_dropout)
+
         if norm == 'none':
             layer_dim = nclass
             self.norm = None
@@ -99,12 +103,9 @@ class Specformer(nn.Module):
         ut = u.permute(1, 0)
 
         if self.norm is None:
-            h = self.feat_dp1(x)
-            h = self.feat_encoder(h)
-            h = self.feat_dp2(h)
+            h = self.feat_encoder(x)
         else:
-            h = self.feat_dp1(x)
-            h = self.linear_encoder(h)
+            h = self.linear_encoder(x)
 
         eig = self.eig_encoder(e)  # [N, d]
 
