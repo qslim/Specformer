@@ -53,13 +53,13 @@ def main_worker(args, config):
         train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
     nfeat = x.size(1)
-    if args.model == 'eigen_trunc':
-        from eigen_trunc import Specformer
+    if args.model == 'spectral_transformer':
+        from spectral_transformer import Specformer
     elif args.model == 'specformer':
         from model_node import Specformer
     else:
         raise NotImplementedError
-    net = Specformer(u.shape[0], nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
+    net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     print(count_parameters(net))
@@ -74,7 +74,7 @@ def main_worker(args, config):
 
         net.train()
         optimizer.zero_grad()
-        logits, filter = net(e, u, x)
+        logits = net(e, u, x)
 
         if 'signal' in args.dataset:
             logits = logits.view(y.size())
@@ -86,7 +86,7 @@ def main_worker(args, config):
         optimizer.step()
 
         net.eval()
-        logits, filter = net(e, u, x)
+        logits = net(e, u, x)
 
         if 'signal' in args.dataset:
             logits = logits.view(y.size())
@@ -113,7 +113,7 @@ def main_worker(args, config):
 
     max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
     max_acc2 = sorted(res, key=lambda x: x[1], reverse=True)[0][-1]
-    return max_acc1, max_acc2, filter
+    return max_acc1, max_acc2
 
 
 if __name__ == '__main__':
@@ -122,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--cuda', type=int, default=0)
     parser.add_argument('--dataset', default='cora')
     parser.add_argument('--image', type=int, default=0)
-    parser.add_argument('--model', default='specformer')
+    parser.add_argument('--model', default='spectral_transformer')
 
     args = parser.parse_args()
     
@@ -132,18 +132,18 @@ if __name__ == '__main__':
         config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
-    seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    seeds = [0]
     config['dataset'] = args.dataset
     config['cuda'] = args.cuda
     config['seeds'] = seeds
     config['model'] = args.model
     config['rank'] = 0
 
-    import wandb
-    wandb.login()
+    # import wandb
+    # wandb.login()
     for seed in seeds:
         args.seed = seed
-        acc1, acc2, filter = main_worker(args, config)
+        acc1, acc2 = main_worker(args, config)
         acc1, acc2 = acc1 * 100.0, acc2 * 100.0
         print(config)
         print(acc1, acc2)

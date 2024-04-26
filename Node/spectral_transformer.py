@@ -20,7 +20,7 @@ class SineEncoding(nn.Module):
         # output: [N, d]
 
         ee = e * self.constant
-        div = torch.exp(torch.arange(0, self.hidden_dim, 2) * (-math.log(10000)/self.hidden_dim)).to(e.device)
+        div = torch.exp(torch.arange(0, self.hidden_dim, 2) * (-math.log(10000) / self.hidden_dim)).to(e.device)
         pe = ee.unsqueeze(1) * div
         eeig = torch.cat((e.unsqueeze(1), torch.sin(pe), torch.cos(pe)), dim=1)
 
@@ -44,7 +44,8 @@ class FeedForwardNetwork(nn.Module):
 
 class SpecLayer(nn.Module):
 
-    def __init__(self, nbases, ncombines, prop_dropout=0.0, norm='none'):
+    def __init__(self, nbases, ncombines, prop_dropout=0.0, norm='none',
+                 nheads=1, tran_dropout=0.0):
         super(SpecLayer, self).__init__()
         self.prop_dropout = nn.Dropout(prop_dropout)
 
@@ -54,16 +55,31 @@ class SpecLayer(nn.Module):
             self.weight = nn.Parameter(torch.empty((1, nbases, ncombines)))
             nn.init.normal_(self.weight, mean=0.0, std=0.01)
 
-        if norm == 'layer':   # Arxiv
+        if norm == 'layer':  # Arxiv
             self.norm = nn.LayerNorm(ncombines)
         elif norm == 'batch':  # Penn
             self.norm = nn.BatchNorm1d(ncombines)
-        else:                  # Others
+        else:  # Others
             self.norm = None
 
+        self.mha_norm = nn.LayerNorm(ncombines)
+        self.ffn_norm = nn.LayerNorm(ncombines)
+        self.mha_dropout = nn.Dropout(tran_dropout)
+        self.ffn_dropout = nn.Dropout(tran_dropout)
+        self.mha = nn.MultiheadAttention(ncombines, nheads, tran_dropout)
+        self.ffn = FeedForwardNetwork(ncombines, ncombines, ncombines)
+
     def forward(self, x):
-        x = self.prop_dropout(x) * self.weight      # [N, m, d] * [1, m, d]
-        x = torch.sum(x, dim=1)
+        mha_x = self.mha_norm(x)
+        mha_x, attn = self.mha(mha_x, mha_x, mha_x)
+        x = x + self.mha_dropout(mha_x)
+
+        ffn_x = self.ffn_norm(x)
+        ffn_x = self.ffn(ffn_x)
+        x = x + self.ffn_dropout(ffn_x)
+
+        # x = self.prop_dropout(x) * self.weight      # [N, m, d] * [1, m, d]
+        # x = torch.sum(x, dim=1)
 
         if self.norm is not None:
             x = self.norm(x)
@@ -75,7 +91,7 @@ class SpecLayer(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
         super(Specformer, self).__init__()
 
         self.norm = norm
@@ -107,10 +123,13 @@ class Specformer(nn.Module):
         self.feat_dp1 = nn.Dropout(feat_dropout)
         self.feat_dp2 = nn.Dropout(feat_dropout)
         if norm == 'none':
-            self.layers = nn.ModuleList([SpecLayer(nheads+1, nclass, prop_dropout, norm=norm) for i in range(nlayer)])
+            self.layers = nn.ModuleList(
+                [SpecLayer(nheads + 1, nclass, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout) for i
+                 in range(nlayer)])
         else:
-            self.layers = nn.ModuleList([SpecLayer(nheads+1, hidden_dim, prop_dropout, norm=norm) for i in range(nlayer)])
-
+            self.layers = nn.ModuleList(
+                [SpecLayer(nheads + 1, hidden_dim, prop_dropout, norm=norm, nheads=nheads, tran_dropout=tran_dropout)
+                 for i in range(nlayer)])
 
     def forward(self, e, u, x):
         N = e.size(0)
@@ -124,26 +143,31 @@ class Specformer(nn.Module):
             h = self.feat_dp1(x)
             h = self.linear_encoder(h)
 
-        eig = self.eig_encoder(e)   # [N, d]
-        # eig = self.eig_encoder(e) + self.linear_encoder(x)
+        eig = self.eig_encoder(e)  # [N, d]
 
         mha_eig = self.mha_norm(eig)
         mha_eig, attn = self.mha(mha_eig, mha_eig, mha_eig)
-        eig = eig + self.mha_dropout(mha_eig + self.linear_encoder(x))
+        eig = eig + self.mha_dropout(mha_eig)
 
         ffn_eig = self.ffn_norm(eig)
         ffn_eig = self.ffn(ffn_eig)
         eig = eig + self.ffn_dropout(ffn_eig)
 
-        new_e = self.decoder(eig)   # [N, m]
+        new_e = self.decoder(eig)  # [N, m]
+
+        x = h
 
         for conv in self.layers:
-            basic_feats = [h]
+            basic_feats = []
             utx = ut @ h
             for i in range(self.nheads):
-                basic_feats.append(u @ (new_e[:, i].unsqueeze(1) * utx))  # [N, d]
-            basic_feats = torch.stack(basic_feats, axis=1)                # [N, m, d]
+                basic_feats.append(new_e[:, i].unsqueeze(1) * utx)  # [N, d]
+            basic_feats = torch.stack(basic_feats, axis=1).squeeze()  # [N, m, d]
             h = conv(basic_feats)
+
+            h = u @ h
+
+        h = h + x
 
         if self.norm == 'none':
             return h
@@ -151,3 +175,4 @@ class Specformer(nn.Module):
             h = self.feat_dp2(h)
             h = self.classify(h)
             return h
+
