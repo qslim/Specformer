@@ -125,11 +125,15 @@ if __name__ == '__main__':
     parser.add_argument('--model', default='spectral_transformer')
 
     args = parser.parse_args()
-    
-    if 'signal' in args.dataset:
-        config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)['signal']
+
+    if args.model == 'spectral_transformer':
+        config_file = 'config2.yaml'
     else:
-        config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+        config_file = 'config.yaml'
+    if 'signal' in args.dataset:
+        config = yaml.load(open(config_file), Loader=yaml.SafeLoader)['signal']
+    else:
+        config = yaml.load(open(config_file), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
     seeds = [1]
