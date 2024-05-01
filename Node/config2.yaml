@@ -14,21 +14,21 @@ cora:
     nclass: 7
     nlayer: 2
     num_heads: 1
-    hidden_dim: 32
+    hidden_dim: 64
     epoch: 2000
-    lr: 0.0002
-    weight_decay: 0.0001
+    lr: 0.002
+    weight_decay: 0.00001
     tran_dropout: 0.2
     feat_dropout: 0.6
-    prop_dropout: 0.2
+    prop_dropout: 0.4
     norm: 'none'
 citeseer:
     nclass: 6
     nlayer: 2
-    num_heads: 2
-    hidden_dim: 32
+    num_heads: 1
+    hidden_dim: 64
     epoch: 2000
-    lr: 0.0002
+    lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.0
     feat_dropout: 0.7

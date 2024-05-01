@@ -151,9 +151,9 @@ class Specformer(nn.Module):
         self.feat_encoder = nn.Sequential(
             nn.Dropout(feat_dropout),
             nn.Linear(nfeat, hidden_dim),
-            nn.ReLU(),
+            nn.GELU(),
             nn.Linear(hidden_dim, nclass),
-            nn.Dropout(feat_dropout),
+            # nn.Dropout(feat_dropout),
         )
 
         self.eig_encoder = SineEncoding(hidden_dim)
