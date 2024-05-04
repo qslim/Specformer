@@ -27,14 +27,25 @@ class SineEncoding(nn.Module):
         return self.eig_w(eeig)
 
 
-class Transformer(nn.Module):
+class MultiheadAttention(nn.Module):
     def __init__(self, embed_dim, nheads, dropout):
-        super(Transformer, self).__init__()
+        super(MultiheadAttention, self).__init__()
         self.mha_norm = nn.LayerNorm(embed_dim)
-        self.ffn_norm = nn.LayerNorm(embed_dim)
         self.mha_dropout = nn.Dropout(dropout)
-        self.ffn_dropout = nn.Dropout(dropout)
         self.mha = nn.MultiheadAttention(embed_dim, nheads, dropout)
+
+    def forward(self, x):
+        mha_x = self.mha_norm(x)
+        mha_x, attn = self.mha(mha_x, mha_x, mha_x)
+        x = x + self.mha_dropout(mha_x)
+        return x
+
+
+class FFN(nn.Module):
+    def __init__(self, embed_dim, dropout):
+        super(FFN, self).__init__()
+        self.ffn_norm = nn.LayerNorm(embed_dim)
+        self.ffn_dropout = nn.Dropout(dropout)
         self.ffn = nn.Sequential(
             nn.Linear(embed_dim, embed_dim),
             nn.GELU(),
@@ -42,10 +53,6 @@ class Transformer(nn.Module):
         )
 
     def forward(self, x):
-        mha_x = self.mha_norm(x)
-        mha_x, attn = self.mha(mha_x, mha_x, mha_x)
-        x = x + self.mha_dropout(mha_x)
-
         ffn_x = self.ffn_norm(x)
         ffn_x = self.ffn(ffn_x)
         x = x + self.ffn_dropout(ffn_x)
@@ -75,9 +82,8 @@ class Specformer(nn.Module):
         self.eig_encoder = SineEncoding(hidden_dim)
         self.decoder = nn.Linear(hidden_dim, 1)
 
-        self.tf_filter = Transformer(hidden_dim, nheads, tran_dropout)
-
-        self.tf_signal = Transformer(nclass, nheads, prop_dropout)
+        self.mha_filter = MultiheadAttention(hidden_dim, nheads, tran_dropout)
+        self.mha_signal = MultiheadAttention(nclass, nheads, prop_dropout)
 
     def forward(self, e, u, x):
         ut = u.permute(1, 0)
@@ -86,11 +92,11 @@ class Specformer(nn.Module):
         x = h
 
         eig = self.eig_encoder(e)  # [N, d]
-        eig = self.tf_filter(eig)
+        eig = self.mha_filter(eig)
         new_e = self.decoder(eig)  # [N, m]
 
         utx = ut @ h
-        h = self.tf_signal(new_e * utx)
+        h = self.mha_signal(new_e * utx)
         h = u @ h
         h = F.gelu(h)
 
