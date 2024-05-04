@@ -21,10 +21,10 @@ cora:
     lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.2
-    feat_dropout: 0.6
+    feat_dropout: 0.8
     prop_dropout: 0.4
     norm: 'none'
-    nonlinear: 'GELU'
+    nonlinear: 'ReLU'
     patience: 200
 citeseer:
     nclass: 6
@@ -32,10 +32,10 @@ citeseer:
     num_heads: 1
     hidden_dim: 64
     epoch: 2000
-    lr: 0.001
+    lr: 0.0002
     weight_decay: 0.0001
     tran_dropout: 0.0
-    feat_dropout: 0.7
+    feat_dropout: 0.8
     prop_dropout: 0.5
     norm: 'none'
     nonlinear: 'GELU'
@@ -87,7 +87,7 @@ squirrel:
     nlayer: 2
     num_heads: 1
     hidden_dim: 64
-    epoch: 2000
+    epoch: 5000
     lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.1
@@ -95,7 +95,7 @@ squirrel:
     prop_dropout: 0.4
     norm: 'none'
     nonlinear: 'ReLU'
-    patience: 2000
+    patience: 4000
 actor:
     nclass: 5
     nlayer: 3
