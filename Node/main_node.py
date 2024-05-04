@@ -31,6 +31,8 @@ def main_worker(args, config):
     feat_dropout = config['feat_dropout']
     prop_dropout = config['prop_dropout']
     norm = config['norm']
+    nonlinear = config['nonlinear']
+    patience = config['patience']
 
     if 'signal' in args.dataset:
         e, u, x, y, m = torch.load('data/{}.pt'.format(args.dataset))
@@ -54,12 +56,12 @@ def main_worker(args, config):
 
     nfeat = x.size(1)
     if args.model == 'spectral_transformer':
-        from spectral_transformer import Specformer
+        from spectral_transformer2 import Specformer
     elif args.model == 'specformer':
         from model_node import Specformer
     else:
         raise NotImplementedError
-    net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
+    net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, norm).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     print(count_parameters(net))
@@ -108,7 +110,7 @@ def main_worker(args, config):
             else:
                 counter += 1
 
-        if counter == 200:
+        if counter == patience:
             break
 
     max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
@@ -136,7 +138,7 @@ if __name__ == '__main__':
         config = yaml.load(open(config_file), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
-    seeds = [1]
+    seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     config['dataset'] = args.dataset
     config['cuda'] = args.cuda
     config['seeds'] = seeds

@@ -42,13 +42,13 @@ class MultiheadAttention(nn.Module):
 
 
 class FFN(nn.Module):
-    def __init__(self, embed_dim, dropout):
+    def __init__(self, embed_dim, dropout, nonlinear):
         super(FFN, self).__init__()
         self.ffn_norm = nn.LayerNorm(embed_dim)
         self.ffn_dropout = nn.Dropout(dropout)
         self.ffn = nn.Sequential(
             nn.Linear(embed_dim, embed_dim),
-            nn.GELU(),
+            nonlinear,
             nn.Linear(embed_dim, embed_dim),
         )
 
@@ -63,7 +63,7 @@ class FFN(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, norm='none'):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', norm='none'):
         super(Specformer, self).__init__()
 
         self.nfeat = nfeat
@@ -71,10 +71,16 @@ class Specformer(nn.Module):
         self.nheads = nheads
         self.hidden_dim = hidden_dim
 
+        if nonlinear == 'ReLU':
+            nonlinear = nn.ReLU()
+        elif nonlinear == 'GELU':
+            nonlinear = nn.GELU()
+        else:
+            raise NotImplementedError
         self.feat_encoder = nn.Sequential(
             nn.Dropout(feat_dropout),
             nn.Linear(nfeat, hidden_dim),
-            nn.GELU(),
+            nonlinear,
             nn.Linear(hidden_dim, nclass),
             # nn.Dropout(feat_dropout),
         )

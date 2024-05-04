@@ -10,18 +10,22 @@ signal:
     feat_dropout: 0.0
     prop_dropout: 0.0
     norm: 'none'
+    nonlinear: 'GELU'
+    patience: 200
 cora:
     nclass: 7
     nlayer: 2
     num_heads: 1
     hidden_dim: 64
     epoch: 2000
-    lr: 0.002
+    lr: 0.001
     weight_decay: 0.00001
     tran_dropout: 0.2
     feat_dropout: 0.6
     prop_dropout: 0.4
     norm: 'none'
+    nonlinear: 'GELU'
+    patience: 200
 citeseer:
     nclass: 6
     nlayer: 2
@@ -34,6 +38,8 @@ citeseer:
     feat_dropout: 0.7
     prop_dropout: 0.5
     norm: 'none'
+    nonlinear: 'GELU'
+    patience: 200
 photo:
     nclass: 8
     nlayer: 2
@@ -46,6 +52,8 @@ photo:
     feat_dropout: 0.3
     prop_dropout: 0.2
     norm: 'none'
+    nonlinear: 'GELU'
+    patience: 200
 arxiv:
     nclass: 40
     nlayer: 1
@@ -58,11 +66,13 @@ arxiv:
     feat_dropout: 0.1
     prop_dropout: 0.1
     norm: 'layer'
+    nonlinear: 'GELU'
+    patience: 200
 chameleon:
     nclass: 5
     nlayer: 2
-    num_heads: 4
-    hidden_dim: 32
+    num_heads: 1
+    hidden_dim: 64
     epoch: 2000
     lr: 0.001
     weight_decay: 0.0005
@@ -70,6 +80,8 @@ chameleon:
     feat_dropout: 0.4
     prop_dropout: 0.5
     norm: 'none'
+    nonlinear: 'GELU'
+    patience: 200
 squirrel:
     nclass: 5
     nlayer: 2
@@ -82,18 +94,22 @@ squirrel:
     feat_dropout: 0.4
     prop_dropout: 0.4
     norm: 'none'
+    nonlinear: 'ReLU'
+    patience: 2000
 actor:
     nclass: 5
     nlayer: 3
     num_heads: 1
-    hidden_dim: 16
+    hidden_dim: 32
     epoch: 2000
-    lr: 0.0002
+    lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.5
     feat_dropout: 0.8
     prop_dropout: 0.5
     norm: 'none'
+    nonlinear: 'GELU'
+    patience: 200
 penn:
     nclass: 2
     nlayer: 1
@@ -106,3 +122,5 @@ penn:
     feat_dropout: 0.4
     prop_dropout: 0.4
     norm: 'batch'
+    nonlinear: 'GELU'
+    patience: 200
