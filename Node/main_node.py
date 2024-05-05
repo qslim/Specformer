@@ -31,8 +31,6 @@ def main_worker(args, config):
     feat_dropout = config['feat_dropout']
     prop_dropout = config['prop_dropout']
     norm = config['norm']
-    nonlinear = config['nonlinear']
-    patience = config['patience']
 
     if 'signal' in args.dataset:
         e, u, x, y, m = torch.load('data/{}.pt'.format(args.dataset))
@@ -56,12 +54,16 @@ def main_worker(args, config):
 
     nfeat = x.size(1)
     if args.model == 'spectral_transformer':
+        nonlinear = config['nonlinear']
+        patience = config['patience']
         from spectral_transformer2 import Specformer
+        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, norm).cuda()
     elif args.model == 'specformer':
+        patience = 200
         from model_node import Specformer
+        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
     else:
         raise NotImplementedError
-    net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, norm).cuda()
     net.apply(init_params)
     optimizer = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     print(count_parameters(net))
