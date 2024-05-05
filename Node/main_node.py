@@ -56,8 +56,9 @@ def main_worker(args, config):
     if args.model == 'spectral_transformer':
         nonlinear = config['nonlinear']
         patience = config['patience']
+        residual = config['residual'] == 'True'
         from spectral_transformer2 import Specformer
-        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, norm).cuda()
+        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, norm).cuda()
     elif args.model == 'specformer':
         patience = 200
         from model_node import Specformer

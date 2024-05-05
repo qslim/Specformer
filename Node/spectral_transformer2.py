@@ -63,7 +63,7 @@ class FFN(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', norm='none'):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', residual=True, norm='none'):
         super(Specformer, self).__init__()
 
         self.nfeat = nfeat
@@ -91,6 +91,8 @@ class Specformer(nn.Module):
         self.mha_filter = MultiheadAttention(hidden_dim, nheads, tran_dropout)
         self.mha_signal = MultiheadAttention(nclass, nheads, prop_dropout)
 
+        self.residual = residual
+
     def forward(self, e, u, x):
         ut = u.permute(1, 0)
         h = self.feat_encoder(x)
@@ -112,6 +114,7 @@ class Specformer(nn.Module):
             h = u @ h
             h = F.gelu(h)
 
-        h = h + x
+        if self.residual:
+            h = h + x
 
         return h

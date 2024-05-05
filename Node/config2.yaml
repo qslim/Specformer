@@ -12,6 +12,7 @@ signal:
     norm: 'none'
     nonlinear: 'GELU'
     patience: 200
+    residual: 'True'
 cora:
     nclass: 7
     nlayer: 2
@@ -26,6 +27,7 @@ cora:
     norm: 'none'
     nonlinear: 'ReLU'
     patience: 200
+    residual: 'True'
 citeseer:
     nclass: 6
     nlayer: 2
@@ -40,20 +42,22 @@ citeseer:
     norm: 'none'
     nonlinear: 'GELU'
     patience: 200
+    residual: 'True'
 photo:
     nclass: 8
     nlayer: 2
-    num_heads: 2
-    hidden_dim: 64
+    num_heads: 1
+    hidden_dim: 128
     epoch: 2000
-    lr: 0.0002
+    lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.2
-    feat_dropout: 0.3
+    feat_dropout: 0.5
     prop_dropout: 0.2
     norm: 'none'
     nonlinear: 'GELU'
     patience: 200
+    residual: 'False'
 arxiv:
     nclass: 40
     nlayer: 1
@@ -68,6 +72,7 @@ arxiv:
     norm: 'layer'
     nonlinear: 'GELU'
     patience: 200
+    residual: 'True'
 chameleon:
     nclass: 5
     nlayer: 2
@@ -77,11 +82,12 @@ chameleon:
     lr: 0.001
     weight_decay: 0.0005
     tran_dropout: 0.2
-    feat_dropout: 0.4
-    prop_dropout: 0.5
+    feat_dropout: 0.8
+    prop_dropout: 0.2
     norm: 'none'
     nonlinear: 'GELU'
-    patience: 200
+    patience: 1000
+    residual: 'True'
 squirrel:
     nclass: 5
     nlayer: 2
@@ -96,6 +102,7 @@ squirrel:
     norm: 'none'
     nonlinear: 'ReLU'
     patience: 4000
+    residual: 'True'
 actor:
     nclass: 5
     nlayer: 3
@@ -110,6 +117,7 @@ actor:
     norm: 'none'
     nonlinear: 'GELU'
     patience: 200
+    residual: 'True'
 penn:
     nclass: 2
     nlayer: 1
@@ -124,3 +132,4 @@ penn:
     norm: 'batch'
     nonlinear: 'GELU'
     patience: 200
+    residual: 'True'
