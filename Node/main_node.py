@@ -52,6 +52,9 @@ def main_worker(args, config):
         train, valid, test = map(torch.LongTensor, (train, valid, test))
         train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
+    print(e.shape)
+    print(u.shape)
+
     nfeat = x.size(1)
     if args.model == 'spectral_transformer':
         nonlinear = config['nonlinear']
