@@ -34,6 +34,11 @@ cora:
     patience: 200
     residual: 'True'
 citeseer:
+    graph_norm_type: 'laplacian'
+    pair_norm_type: 'laplacian'
+    pair_dis_type: 'cosine'
+    pair_trunc: -1
+
     nclass: 6
     nlayer: 2
     num_heads: 1
