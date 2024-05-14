@@ -14,6 +14,11 @@ signal:
     patience: 200
     residual: 'True'
 cora:
+    graph_norm_type: 'laplacian'
+    pair_norm_type: 'laplacian'
+    pair_dis_type: 'cosine'
+    pair_trunc: 'all'
+
     nclass: 7
     nlayer: 2
     num_heads: 1

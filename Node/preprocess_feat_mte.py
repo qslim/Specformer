@@ -1,5 +1,7 @@
 import random
 import sys
+import argparse
+import yaml
 import os
 import math
 import time
@@ -82,14 +84,14 @@ def load_data(dataset_str):
     return adj, features, labels
 
 
-def compute_feat_graph(x, dis_type='cosine'):
-    if dis_type == 'cosine':
+def compute_feat_graph(x, pair_dis_type='cosine'):
+    if pair_dis_type == 'cosine':
         # Step 1: Normalize each row vector to have unit length
         norm_x = x / np.maximum(np.linalg.norm(x, axis=1, keepdims=True), 1e-8)
         # Step 2: Compute the cosine similarity matrix
         feat_graph = np.dot(norm_x, norm_x.T)
         # print(feat_similarity)
-    elif dis_type == 'euclidean':
+    elif pair_dis_type == 'euclidean':
         n = x.shape[0]
         feat_graph = np.zeros((n, n))
         for i in range(n):
@@ -103,7 +105,7 @@ def compute_feat_graph(x, dis_type='cosine'):
     return feat_graph
 
 
-def generate_node_data(dataset):
+def generate_node_data(dataset, config):
     
     if dataset in ['cora', 'citeseer']:
 
@@ -162,10 +164,17 @@ def generate_node_data(dataset):
     else:
         raise NotImplementedError
 
-    e, u = eigh(normalize_graph(adj, norm_type='laplacian'))
+    e, u = eigh(normalize_graph(adj, norm_type=config['graph_norm_type']))
 
-    feat_graph = compute_feat_graph(x, dis_type='cosine')
-    e_feat, u_feat = eigh(normalize_graph(feat_graph, norm_type='laplacian'))
+    feat_graph = compute_feat_graph(x, pair_dis_type=config['pair_dis_type'])
+    e_feat, u_feat = eigh(normalize_graph(feat_graph, norm_type=config['pair_norm_type']))
+    pair_trunc = config['pair_trunc']
+    if pair_trunc == 'all':
+        pass
+    elif pair_trunc < 0:
+        e_feat, u_feat = e_feat[pair_trunc:], u_feat[:, pair_trunc:]
+    else:
+        e_feat, u_feat = e_feat[:pair_trunc], u_feat[:, :pair_trunc]
     e, u = np.concatenate((e, e_feat), axis=0), np.concatenate((u, u_feat), axis=1)
 
     e = torch.FloatTensor(e)
@@ -179,12 +188,21 @@ def generate_node_data(dataset):
 
 
 if __name__ == '__main__':
-    seed_everything(666)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=666)
+    parser.add_argument('--dataset', default='cora')
+
+    args = parser.parse_args()
+
+    seed_everything(args.seed)
+
+    config = yaml.load(open('config2.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+
     #generate_node_data('cora')
     #generate_node_data('citeseer')
     #generate_node_data('photo')
     # generate_node_data('chameleon')
     #generate_node_data('squirrel')
     #generate_node_data('actor')
-    generate_node_data('cora')
+    generate_node_data(args.dataset, config)
 
