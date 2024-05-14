@@ -85,11 +85,16 @@ def load_data(dataset_str):
 
 
 def compute_feat_graph(x, pair_dis_type='cosine'):
+    x = (x - x.mean(axis=1, keepdims=True)) / np.maximum(x.std(axis=1, keepdims=True), 1e-8)
+    # x = x - x.mean(axis=1, keepdims=True)
+    # x = x - x.mean(axis=0, keepdims=True)
     if pair_dis_type == 'cosine':
         # Step 1: Normalize each row vector to have unit length
         norm_x = x / np.maximum(np.linalg.norm(x, axis=1, keepdims=True), 1e-8)
         # Step 2: Compute the cosine similarity matrix
         feat_graph = np.dot(norm_x, norm_x.T)
+        # feat_graph = np.dot(norm_x, norm_x.T) + 1.0
+        # feat_graph = np.absolute(np.dot(norm_x, norm_x.T))
         # print(feat_similarity)
     elif pair_dis_type == 'euclidean':
         n = x.shape[0]
