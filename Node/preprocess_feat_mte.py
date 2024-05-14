@@ -11,13 +11,11 @@ import pandas as pd
 import networkx as nx
 import dgl
 import torch
-from sklearn.preprocessing import label_binarize
-from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 from numpy.linalg import eig, eigh
 from utils import seed_everything
 
 
-def normalize_graph(g):
+def normalize_graph(g, norm_type='laplacian'):
     g = np.array(g)
     g = g + g.T
     g[g > 0.] = 1.0
@@ -25,16 +23,13 @@ def normalize_graph(g):
     deg[deg == 0.] = 1.0
     deg = np.diag(deg ** -0.5)
     adj = np.dot(np.dot(deg, g), deg)
-    # L = np.eye(g.shape[0]) - adj
-    return adj
-
-
-def eigen_decompositon(g):
-    "The normalized (unit “length”) eigenvectors, "
-    "such that the column v[:,i] is the eigenvector corresponding to the eigenvalue w[i]."
-    g = normalize_graph(g)
-    e, u = eigh(g)
-    return e, u
+    if norm_type == 'laplacian':
+        res = np.eye(g.shape[0]) - adj
+    elif norm_type == 'adjacency':
+        res = adj
+    else:
+        raise NotImplementedError
+    return res
 
 
 def parse_index_file(filename):
@@ -87,57 +82,25 @@ def load_data(dataset_str):
     return adj, features, labels
 
 
-def eig_dgl_adj_sparse(g, sm=0, lm=0):
-    # A = g.adj(scipy_fmt='csr')
-    A = g.adj_external(scipy_fmt='csr')
-    deg = np.array(A.sum(axis=0)).flatten()
-    D_ = sp.sparse.diags(deg ** -0.5)
-
-    A_ = D_.dot(A.dot(D_))
-    L_ = sp.sparse.eye(g.num_nodes()) - A_
-
-    if sm > 0:
-        e1, u1 = sp.sparse.linalg.eigsh(L_, k=sm, which='SM', tol=1e-5)
-        e1, u1 = map(torch.FloatTensor, (e1, u1))
-
-    if lm > 0:
-        e2, u2 = sp.sparse.linalg.eigsh(L_, k=lm, which='LM', tol=1e-5)
-        e2, u2 = map(torch.FloatTensor, (e2, u2))
-
-    if sm > 0 and lm > 0:
-        return torch.cat((e1, e2), dim=0), torch.cat((u1, u2), dim=1)
-    elif sm > 0:
-        return e1, u1
-    elif lm > 0:
-        return e2, u2
+def compute_feat_graph(x, dis_type='cosine'):
+    if dis_type == 'cosine':
+        # Step 1: Normalize each row vector to have unit length
+        norm_x = x / np.maximum(np.linalg.norm(x, axis=1, keepdims=True), 1e-8)
+        # Step 2: Compute the cosine similarity matrix
+        feat_graph = np.dot(norm_x, norm_x.T)
+        # print(feat_similarity)
+    elif dis_type == 'euclidean':
+        n = x.shape[0]
+        feat_graph = np.zeros((n, n))
+        for i in range(n):
+            for j in range(i, n):
+                dist = np.linalg.norm(x[i] - x[j])
+                feat_graph[i, j] = dist
+                feat_graph[j, i] = dist
     else:
-        pass
+        raise NotImplementedError
 
-
-def load_fb100_dataset():
-    mat = io.loadmat('node_raw_data/Penn94.mat')
-    A = mat['A']
-    metadata = mat['local_info']
-
-    edge_index = A.nonzero()
-    metadata = metadata.astype(int)
-    label = metadata[:, 1] - 1  # gender label, -1 means unlabeled
-
-    # make features into one-hot encodings
-    feature_vals = np.hstack((np.expand_dims(metadata[:, 0], 1), metadata[:, 2:]))
-    features = np.empty((A.shape[0], 0))
-    for col in range(feature_vals.shape[1]):
-        feat_col = feature_vals[:, col]
-        feat_onehot = label_binarize(feat_col, classes=np.unique(feat_col))
-        features = np.hstack((features, feat_onehot))
-
-    node_feat = torch.tensor(features, dtype=torch.float)
-    num_nodes = metadata.shape[0]
-    label = torch.LongTensor(label)
-
-    g = dgl.graph((edge_index[0], edge_index[1]), num_nodes=num_nodes)
-
-    return g, node_feat, label
+    return feat_graph
 
 
 def generate_node_data(dataset):
@@ -145,32 +108,9 @@ def generate_node_data(dataset):
     if dataset in ['cora', 'citeseer']:
 
         adj, x, y = load_data(dataset)
-        e, u = [], []
         adj = adj.todense()
-        _e, _u = eigen_decompositon(adj)
-        e.append(torch.FloatTensor(_e))
-        u.append(torch.FloatTensor(_u))
         x = x.todense()
         x = feature_normalize(x)
-
-        # Step 1: Normalize each row vector to have unit length
-        norm_x = x / np.linalg.norm(x, axis=1, keepdims=True)
-        # Step 2: Compute the cosine similarity matrix
-        feat_similarity = np.dot(norm_x, norm_x.T)
-        # print(feat_similarity)
-        _e, _u = eigen_decompositon(feat_similarity)
-        e.append(torch.FloatTensor(_e))
-        u.append(torch.FloatTensor(_u))
-
-        e = torch.cat(e, dim=0)
-        u = torch.cat(u, dim=1)
-
-        x = torch.FloatTensor(x)
-        y = torch.LongTensor(y)
-
-        torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
-        print(e.shape)
-        print(u.shape)
 
     elif dataset in ['photo']:
         data = np.load('node_raw_data/amazon_electronics_photo.npz', allow_pickle=True)
@@ -180,35 +120,6 @@ def generate_node_data(dataset):
                             shape=data['attr_shape']).toarray()
         x = feature_normalize(feat)
         y = data['labels']
-        e, u = eigen_decompositon(adj)
-
-        e = torch.FloatTensor(e)
-        u = torch.FloatTensor(u)
-        x = torch.FloatTensor(x)
-        y = torch.LongTensor(y)
-
-        torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
-
-    elif dataset in ['arxiv']:
-        data = DglNodePropPredDataset('ogbn-arxiv')
-        g = data[0][0]
-        g = dgl.add_reverse_edges(g)
-        g = dgl.to_simple(g)
-
-        e, u = eig_dgl_adj_sparse(g, sm=5000)
-        x = g.ndata['feat']
-        y = data[0][1]
-
-        torch.save([e, u, x, y],  'data/arxiv.pt')
-
-    elif dataset in ['penn']:
-        g, x, y = load_fb100_dataset()
-        g = dgl.add_reverse_edges(g)
-        g = dgl.to_simple(g)
-
-        e, u = eig_dgl_adj_sparse(g, sm=3000, lm=3000)
-
-        torch.save([e, u, x, y],  'data/penn.pt')
 
     elif dataset in ['chameleon', 'squirrel', 'actor']:
         edge_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'out1_graph_edges.txt', sep='\t')
@@ -248,14 +159,23 @@ def generate_node_data(dataset):
             x = np.array(new_feat)
             x = feature_normalize(x)
 
-        e, u = eigen_decompositon(adj)
+    else:
+        raise NotImplementedError
 
-        e = torch.FloatTensor(e)
-        u = torch.FloatTensor(u)
-        x = torch.FloatTensor(x)
-        y = torch.LongTensor(y)
+    e, u = eigh(normalize_graph(adj, norm_type='laplacian'))
 
-        torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
+    feat_graph = compute_feat_graph(x, dis_type='cosine')
+    e_feat, u_feat = eigh(normalize_graph(feat_graph, norm_type='laplacian'))
+    e, u = np.concatenate((e, e_feat), axis=0), np.concatenate((u, u_feat), axis=1)
+
+    e = torch.FloatTensor(e)
+    u = torch.FloatTensor(u)
+    x = torch.FloatTensor(x)
+    y = torch.LongTensor(y)
+
+    torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))
+    print(e.shape)
+    print(u.shape)
 
 
 if __name__ == '__main__':
@@ -263,7 +183,7 @@ if __name__ == '__main__':
     #generate_node_data('cora')
     #generate_node_data('citeseer')
     #generate_node_data('photo')
-    #generate_node_data('chameleon')
+    # generate_node_data('chameleon')
     #generate_node_data('squirrel')
     #generate_node_data('actor')
     generate_node_data('cora')
