@@ -1,3 +1,4 @@
+import random
 import sys
 import os
 import math
@@ -13,44 +14,7 @@ import torch
 from sklearn.preprocessing import label_binarize
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 from numpy.linalg import eig, eigh
-
-
-def generate_signal_data():
-    data = io.loadmat('node_raw_data/2Dgrid.mat')
-    A = data['A']
-    x = data['F'].astype(np.float32)
-    m = data['mask']
-
-    A = sp.sparse.coo_matrix(A).todense()
-
-    D_vec = np.sum(A, axis=1).A1
-    D_vec_invsqrt_corr = 1 / np.sqrt(D_vec)
-    D_invsqrt_corr = np.diag(D_vec_invsqrt_corr)
-    L = np.eye(10000) - D_invsqrt_corr @ A @ D_invsqrt_corr
-
-    e, u = eigh(L)
-
-    y_low  = u @ np.diag(np.array([math.exp(-10*(ee-0)**2) for ee in e])) @ u.T @ x
-    y_high = u @ np.diag(np.array([1 - math.exp(-10*(ee-0)**2) for ee in e])) @ u.T @ x
-    y_band = u @ np.diag(np.array([math.exp(-10*(ee-1)**2) for ee in e])) @ u.T @ x
-    y_rej  = u @ np.diag(np.array([1 - math.exp(-10*(ee-1)**2) for ee in e])) @ u.T @ x
-    y_comb = u @ np.diag(np.array([abs(np.sin(ee*math.pi)) for ee in e])) @ u.T @ x
-
-    e = torch.FloatTensor(e)
-    u = torch.FloatTensor(u)
-    x = torch.FloatTensor(x)
-    m = torch.LongTensor(m).squeeze()
-    y_low = torch.FloatTensor(y_low)
-    y_high = torch.FloatTensor(y_high)
-    y_band = torch.FloatTensor(y_band)
-    y_rej = torch.FloatTensor(y_rej)
-    y_comb = torch.FloatTensor(y_comb)
-
-    torch.save([e, u, x, y_low, m],  'data/signal_low.pt')
-    torch.save([e, u, x, y_high, m], 'data/signal_high.pt')
-    torch.save([e, u, x, y_band, m], 'data/signal_band.pt')
-    torch.save([e, u, x, y_rej, m],  'data/signal_rej.pt')
-    torch.save([e, u, x, y_comb, m], 'data/signal_comb.pt')
+from utils import seed_everything
 
 
 def normalize_graph(g):
@@ -61,8 +25,8 @@ def normalize_graph(g):
     deg[deg == 0.] = 1.0
     deg = np.diag(deg ** -0.5)
     adj = np.dot(np.dot(deg, g), deg)
-    L = np.eye(g.shape[0]) - adj
-    return L
+    # L = np.eye(g.shape[0]) - adj
+    return adj
 
 
 def eigen_decompositon(g):
@@ -181,17 +145,32 @@ def generate_node_data(dataset):
     if dataset in ['cora', 'citeseer']:
 
         adj, x, y = load_data(dataset)
+        e, u = [], []
         adj = adj.todense()
+        _e, _u = eigen_decompositon(adj)
+        e.append(torch.FloatTensor(_e))
+        u.append(torch.FloatTensor(_u))
         x = x.todense()
         x = feature_normalize(x)
-        e, u = eigen_decompositon(adj)
 
-        e = torch.FloatTensor(e)
-        u = torch.FloatTensor(u)
+        # Step 1: Normalize each row vector to have unit length
+        norm_x = x / np.linalg.norm(x, axis=1, keepdims=True)
+        # Step 2: Compute the cosine similarity matrix
+        feat_similarity = np.dot(norm_x, norm_x.T)
+        # print(feat_similarity)
+        _e, _u = eigen_decompositon(feat_similarity)
+        e.append(torch.FloatTensor(_e))
+        u.append(torch.FloatTensor(_u))
+
+        e = torch.cat(e, dim=0)
+        u = torch.cat(u, dim=1)
+
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
 
         torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
+        print(e.shape)
+        print(u.shape)
 
     elif dataset in ['photo']:
         data = np.load('node_raw_data/amazon_electronics_photo.npz', allow_pickle=True)
@@ -280,6 +259,7 @@ def generate_node_data(dataset):
 
 
 if __name__ == '__main__':
+    seed_everything(666)
     #generate_node_data('cora')
     #generate_node_data('citeseer')
     #generate_node_data('photo')

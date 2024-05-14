@@ -1,3 +1,4 @@
+import random
 import sys
 import os
 import math
@@ -13,44 +14,7 @@ import torch
 from sklearn.preprocessing import label_binarize
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 from numpy.linalg import eig, eigh
-
-
-def generate_signal_data():
-    data = io.loadmat('node_raw_data/2Dgrid.mat')
-    A = data['A']
-    x = data['F'].astype(np.float32)
-    m = data['mask']
-
-    A = sp.sparse.coo_matrix(A).todense()
-
-    D_vec = np.sum(A, axis=1).A1
-    D_vec_invsqrt_corr = 1 / np.sqrt(D_vec)
-    D_invsqrt_corr = np.diag(D_vec_invsqrt_corr)
-    L = np.eye(10000) - D_invsqrt_corr @ A @ D_invsqrt_corr
-
-    e, u = eigh(L)
-
-    y_low  = u @ np.diag(np.array([math.exp(-10*(ee-0)**2) for ee in e])) @ u.T @ x
-    y_high = u @ np.diag(np.array([1 - math.exp(-10*(ee-0)**2) for ee in e])) @ u.T @ x
-    y_band = u @ np.diag(np.array([math.exp(-10*(ee-1)**2) for ee in e])) @ u.T @ x
-    y_rej  = u @ np.diag(np.array([1 - math.exp(-10*(ee-1)**2) for ee in e])) @ u.T @ x
-    y_comb = u @ np.diag(np.array([abs(np.sin(ee*math.pi)) for ee in e])) @ u.T @ x
-
-    e = torch.FloatTensor(e)
-    u = torch.FloatTensor(u)
-    x = torch.FloatTensor(x)
-    m = torch.LongTensor(m).squeeze()
-    y_low = torch.FloatTensor(y_low)
-    y_high = torch.FloatTensor(y_high)
-    y_band = torch.FloatTensor(y_band)
-    y_rej = torch.FloatTensor(y_rej)
-    y_comb = torch.FloatTensor(y_comb)
-
-    torch.save([e, u, x, y_low, m],  'data/signal_low.pt')
-    torch.save([e, u, x, y_high, m], 'data/signal_high.pt')
-    torch.save([e, u, x, y_band, m], 'data/signal_band.pt')
-    torch.save([e, u, x, y_rej, m],  'data/signal_rej.pt')
-    torch.save([e, u, x, y_comb, m], 'data/signal_comb.pt')
+from utils import seed_everything
 
 
 def normalize_graph(g):
@@ -88,6 +52,51 @@ def feature_normalize(x):
     return x / rowsum
 
 
+def edge_partition(graph):
+    edge_map_1, edge_map_2, edge_map = {}, {}, {}
+    for left, _ in graph.items():
+        edge_map_1[left], edge_map_2[left], edge_map[left] = [], [], []
+    for left, right_list in graph.items():
+        for right in right_list:
+            if left > right:
+                _left = right
+                _right = left
+            else:
+                _left = left
+                _right = right
+
+            list = edge_map[_left]
+            flag = True
+            for e in list:
+                if e == _right:
+                    flag = False
+                    break
+            if flag:
+                edge_map[_left].append(_right)
+
+    print(edge_count(edge_map))
+    print(nx.from_dict_of_lists(edge_map))
+    for left, right_list in edge_map.items():
+        for right in right_list:
+            if random.random() >= 0.5:
+                edge_map_1[left].append(right)
+                edge_map_1[right].append(left)
+            else:
+                edge_map_2[left].append(right)
+                edge_map_2[right].append(left)
+
+    return edge_map_1, edge_map_2
+
+
+def edge_count(graph):
+    count = 0
+    for left, right_list in graph.items():
+        for right in right_list:
+            count += 1
+
+    return count
+
+
 def load_data(dataset_str):
     names = ['x', 'y', 'tx', 'ty', 'allx', 'ally', 'graph']
     objects = []
@@ -115,12 +124,26 @@ def load_data(dataset_str):
 
     features = sp.sparse.vstack((allx, tx)).tolil()
     features[test_idx_reorder, :] = features[test_idx_range, :]
-    adj = nx.adjacency_matrix(nx.from_dict_of_lists(graph))
 
     labels = np.vstack((ally, ty))
     labels[test_idx_reorder, :] = labels[test_idx_range, :]
 
-    return adj, features, labels
+    print(edge_count(graph))
+    nx_graph = nx.from_dict_of_lists(graph)
+    print(nx_graph)
+    adj = nx.adjacency_matrix(nx_graph)
+
+    graph_1, graph_2 = edge_partition(graph)
+    print(edge_count(graph_1))
+    nx_graph_1 = nx.from_dict_of_lists(graph_1)
+    print(nx_graph_1)
+    print(edge_count(graph_2))
+    nx_graph_2 = nx.from_dict_of_lists(graph_2)
+    print(nx_graph_2)
+    adj_1 = nx.adjacency_matrix(nx_graph_1)
+    adj_2 = nx.adjacency_matrix(nx_graph_2)
+
+    return [adj, adj_1, adj_2], features, labels
 
 
 def eig_dgl_adj_sparse(g, sm=0, lm=0):
@@ -180,18 +203,25 @@ def generate_node_data(dataset):
     
     if dataset in ['cora', 'citeseer']:
 
-        adj, x, y = load_data(dataset)
-        adj = adj.todense()
+        adj_bank, x, y = load_data(dataset)
+        e, u = [], []
+        for adj in adj_bank:
+            adj = adj.todense()
+            _e, _u = eigen_decompositon(adj)
+            e.append(torch.FloatTensor(_e))
+            u.append(torch.FloatTensor(_u))
+        e = torch.cat(e, dim=0)
+        u = torch.cat(u, dim=1)
+
         x = x.todense()
         x = feature_normalize(x)
-        e, u = eigen_decompositon(adj)
 
-        e = torch.FloatTensor(e)
-        u = torch.FloatTensor(u)
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
 
         torch.save([e, u, x, y],  'data/{}.pt'.format(dataset))
+        print(e.shape)
+        print(u.shape)
 
     elif dataset in ['photo']:
         data = np.load('node_raw_data/amazon_electronics_photo.npz', allow_pickle=True)
@@ -280,6 +310,7 @@ def generate_node_data(dataset):
 
 
 if __name__ == '__main__':
+    seed_everything(666)
     #generate_node_data('cora')
     #generate_node_data('citeseer')
     #generate_node_data('photo')
