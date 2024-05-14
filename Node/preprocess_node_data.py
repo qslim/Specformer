@@ -63,8 +63,8 @@ def normalize_graph(g):
     deg[deg == 0.] = 1.0
     deg = np.diag(deg ** -0.5)
     adj = np.dot(np.dot(deg, g), deg)
-    L = np.eye(g.shape[0]) - adj
-    return L
+    # L = np.eye(g.shape[0]) - adj
+    return adj
 
 
 def eigen_decompositon(g):
@@ -243,16 +243,26 @@ def generate_node_data(dataset):
 
         adj_bank, x, y = load_data(dataset)
         e, u = [], []
-        for adj in adj_bank:
+        for adj in adj_bank[:1]:
             adj = adj.todense()
             _e, _u = eigen_decompositon(adj)
             e.append(torch.FloatTensor(_e))
             u.append(torch.FloatTensor(_u))
-        e = torch.cat(e, dim=0)
-        u = torch.cat(u, dim=1)
 
         x = x.todense()
         x = feature_normalize(x)
+
+        # Step 1: Normalize each row vector to have unit length
+        norm_x = x / np.linalg.norm(x, axis=1, keepdims=True)
+        # Step 2: Compute the cosine similarity matrix
+        feat_similarity = np.dot(norm_x, norm_x.T)
+        # print(feat_similarity)
+        _e, _u = eigen_decompositon(feat_similarity)
+        e.append(torch.FloatTensor(_e))
+        u.append(torch.FloatTensor(_u))
+
+        e = torch.cat(e, dim=0)
+        u = torch.cat(u, dim=1)
 
         x = torch.FloatTensor(x)
         y = torch.LongTensor(y)
