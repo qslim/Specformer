@@ -84,7 +84,7 @@ def load_data(dataset_str):
     return adj, features, labels
 
 
-def compute_feat_graph(x, pair_dis_type='cosine'):
+def compute_feat_graph(x, dataset, pair_dis_type='cosine'):
     x = (x - x.mean(axis=1, keepdims=True)) / np.maximum(x.std(axis=1, keepdims=True), 1e-8)
     # x = x - x.mean(axis=1, keepdims=True)
     # x = x - x.mean(axis=0, keepdims=True)
@@ -92,9 +92,11 @@ def compute_feat_graph(x, pair_dis_type='cosine'):
         # Step 1: Normalize each row vector to have unit length
         norm_x = x / np.maximum(np.linalg.norm(x, axis=1, keepdims=True), 1e-8)
         # Step 2: Compute the cosine similarity matrix
-        feat_graph = np.dot(norm_x, norm_x.T)
-        # feat_graph = np.dot(norm_x, norm_x.T) + 1.0
-        # feat_graph = np.absolute(np.dot(norm_x, norm_x.T))
+        if dataset == 'cora':
+            feat_graph = np.dot(norm_x, norm_x.T)
+        else:
+            feat_graph = np.absolute(np.dot(norm_x, norm_x.T))
+            # feat_graph = np.dot(norm_x, norm_x.T) + 1.0
         # print(feat_similarity)
     elif pair_dis_type == 'euclidean':
         n = x.shape[0]
@@ -171,7 +173,7 @@ def generate_node_data(dataset, config):
 
     e, u = eigh(normalize_graph(adj, norm_type=config['graph_norm_type']))
 
-    feat_graph = compute_feat_graph(x, pair_dis_type=config['pair_dis_type'])
+    feat_graph = compute_feat_graph(x, dataset=dataset, pair_dis_type=config['pair_dis_type'])
     e_feat, u_feat = eigh(normalize_graph(feat_graph, norm_type=config['pair_norm_type']))
     pair_trunc = config['pair_trunc']
     if pair_trunc == 'all':
