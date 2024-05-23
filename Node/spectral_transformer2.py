@@ -89,7 +89,9 @@ class Specformer(nn.Module):
         self.decoder = nn.Linear(hidden_dim, 1)
 
         self.mha_filter = MultiheadAttention(hidden_dim, nheads, tran_dropout)
+        # self.ffn_filter = FFN(hidden_dim, tran_dropout, nonlinear)
         self.mha_signal = MultiheadAttention(nclass, nheads, prop_dropout)
+        # self.ffn_signal = FFN(nclass, prop_dropout, nonlinear)
 
         self.residual = residual
 
@@ -101,10 +103,12 @@ class Specformer(nn.Module):
 
         eig = self.eig_encoder(e)  # [N, d]
         eig = self.mha_filter(eig)
+        # eig = self.ffn_filter(eig)
         new_e = self.decoder(eig)  # [N, m]
 
         utx = ut @ h
         h = self.mha_signal(new_e * utx)
+        # h = self.ffn_signal(h)
         h = u @ h
         h = F.gelu(h)
 
