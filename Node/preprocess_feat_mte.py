@@ -17,16 +17,19 @@ from numpy.linalg import eig, eigh
 from utils import seed_everything
 
 
-def normalize_graph(g, norm_type='laplacian'):
+def normalize_graph(g, power=-0.5, norm_type='laplacian'):
     g = np.array(g)
     g = g + g.T
     g[g > 0.] = 1.0
     deg = g.sum(axis=1).reshape(-1)
     deg[deg == 0.] = 1.0
-    deg = np.diag(deg ** -0.5)
+    deg = np.diag(deg ** power)
     adj = np.dot(np.dot(deg, g), deg)
     if norm_type == 'laplacian':
-        res = np.eye(g.shape[0]) - adj
+        _deg = adj.sum(axis=1).reshape(-1)
+        # _deg[_deg == 0.] = 1.0
+        _deg = np.diag(_deg)
+        res = _deg - adj
     elif norm_type == 'adjacency':
         res = adj
     else:
@@ -171,18 +174,24 @@ def generate_node_data(dataset, config):
     else:
         raise NotImplementedError
 
-    e, u = eigh(normalize_graph(adj, norm_type=config['graph_norm_type']))
+    e, u = [], []
+    for pow in config['norm_power']:
+        _e, _u = eigh(normalize_graph(adj, power=pow, norm_type=config['graph_norm_type']))
+        e.append(_e)
+        u.append(_u)
+    e, u = np.concatenate(e, axis=0), np.concatenate(u, axis=1)
 
-    feat_graph = compute_feat_graph(x, dataset=dataset, pair_dis_type=config['pair_dis_type'])
-    e_feat, u_feat = eigh(normalize_graph(feat_graph, norm_type=config['pair_norm_type']))
-    pair_trunc = config['pair_trunc']
-    if pair_trunc == 'all':
-        pass
-    elif pair_trunc < 0:
-        e_feat, u_feat = e_feat[pair_trunc:], u_feat[:, pair_trunc:]
-    else:
-        e_feat, u_feat = e_feat[:pair_trunc], u_feat[:, :pair_trunc]
-    e, u = np.concatenate((e, e_feat), axis=0), np.concatenate((u, u_feat), axis=1)
+    if config['pair_trunc'] != 0:
+        feat_graph = compute_feat_graph(x, dataset=dataset, pair_dis_type=config['pair_dis_type'])
+        e_feat, u_feat = eigh(normalize_graph(feat_graph, norm_type=config['pair_norm_type']))
+        pair_trunc = config['pair_trunc']
+        if pair_trunc == 'all':
+            pass
+        elif pair_trunc < 0:
+            e_feat, u_feat = e_feat[pair_trunc:], u_feat[:, pair_trunc:]
+        else:
+            e_feat, u_feat = e_feat[:pair_trunc], u_feat[:, :pair_trunc]
+        e, u = np.concatenate((e, e_feat), axis=0), np.concatenate((u, u_feat), axis=1)
 
     e = torch.FloatTensor(e)
     u = torch.FloatTensor(u)
