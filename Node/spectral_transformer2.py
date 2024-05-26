@@ -90,8 +90,9 @@ class Specformer(nn.Module):
 
         self.mha_filter = MultiheadAttention(hidden_dim, nheads, tran_dropout)
         # self.ffn_filter = FFN(hidden_dim, tran_dropout, nonlinear)
-        self.mha_signal = MultiheadAttention(nclass, nheads, prop_dropout)
-        # self.ffn_signal = FFN(nclass, prop_dropout, nonlinear)
+        if is_f_tf:
+            self.mha_signal = MultiheadAttention(nclass, nheads, prop_dropout)
+            # self.ffn_signal = FFN(nclass, prop_dropout, nonlinear)
 
         self.residual = residual
         self.is_f_tf = is_f_tf
