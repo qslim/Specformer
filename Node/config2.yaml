@@ -18,7 +18,7 @@ cora:
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
     pair_trunc: 'all'
-    norm_power: [-0.5, -0.4]
+    norm_power: [-0.5]
 
     nclass: 7
     nlayer: 2
@@ -34,6 +34,7 @@ cora:
     nonlinear: 'ReLU'
     patience: 200
     residual: 'True'
+    is_f_tf: 'True'
 citeseer:
     graph_norm_type: 'adjacency'
     pair_norm_type: 'laplacian'
@@ -55,6 +56,7 @@ citeseer:
     nonlinear: 'GELU'
     patience: 200
     residual: 'True'
+    is_f_tf: 'False'
 photo:
     graph_norm_type: 'laplacian'
     pair_norm_type: 'laplacian'
