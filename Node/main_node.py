@@ -61,7 +61,10 @@ def main_worker(args, config):
         patience = config['patience']
         residual = config['residual'] == 'True'
         is_f_tf = config['is_f_tf'] == 'True'
-        from spectral_transformer2 import Specformer
+        if args.dataset == 'arxiv':
+            from spectral_transformer3 import Specformer
+        else:
+            from spectral_transformer2 import Specformer
         net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
     elif args.model == 'specformer':
         patience = 200
