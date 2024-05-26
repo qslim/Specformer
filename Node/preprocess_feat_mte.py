@@ -9,6 +9,7 @@ import pickle as pkl
 import scipy as sp
 from scipy import io
 import numpy as np
+from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 import pandas as pd
 import networkx as nx
 import dgl
@@ -206,10 +207,56 @@ def generate_node_data(dataset, config):
     print(u.shape)
 
 
+def generate_node_data_arxiv(config):
+    def normalize_graph(g, power=-0.5, norm_type='laplacian'):
+        # adj = g.adj(scipy_fmt='csr')
+        adj = g.adj_external(scipy_fmt='csr')
+        deg = np.array(adj.sum(axis=0)).flatten()
+        deg = sp.sparse.diags(deg ** power)
+        adj = deg.dot(adj.dot(deg))
+        if norm_type == 'laplacian':
+            if power == -0.5:
+                deg = sp.sparse.eye(g.num_nodes())
+            else:
+                deg = np.array(adj.sum(axis=0)).flatten()
+                deg = sp.sparse.diags(deg)
+            res = deg - adj
+        elif norm_type == 'adjacency':
+            res = adj
+        else:
+            raise NotImplementedError
+        return res
+
+    data = DglNodePropPredDataset('ogbn-arxiv')
+    g = data[0][0]
+    g = dgl.add_reverse_edges(g)
+    g = dgl.to_simple(g)
+    e, u = [], []
+    for pow in config['norm_power']:
+        norm_g = normalize_graph(g, power=pow, norm_type=config['graph_norm_type'])
+        _e, _u = sp.sparse.linalg.eigsh(norm_g, k=100, which='SM', tol=1e-5)
+        e.append(_e)
+        u.append(_u)
+        _e, _u = sp.sparse.linalg.eigsh(norm_g, k=100, which='LM', tol=1e-5)
+        e.append(_e)
+        u.append(_u)
+    e, u = np.concatenate(e, axis=0), np.concatenate(u, axis=1)
+
+    e = torch.FloatTensor(e)
+    u = torch.FloatTensor(u)
+
+    x = g.ndata['feat']
+    y = data[0][1]
+
+    torch.save([e, u, x, y], 'data/arxiv.pt')
+    print(e.shape)
+    print(u.shape)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=666)
-    parser.add_argument('--dataset', default='cora')
+    parser.add_argument('--dataset', default='none')
 
     args = parser.parse_args()
 
@@ -217,11 +264,7 @@ if __name__ == '__main__':
 
     config = yaml.load(open('config2.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
-    #generate_node_data('cora')
-    #generate_node_data('citeseer')
-    #generate_node_data('photo')
-    # generate_node_data('chameleon')
-    #generate_node_data('squirrel')
-    #generate_node_data('actor')
-    generate_node_data(args.dataset, config)
-
+    if args.dataset == 'arxiv':
+        generate_node_data_arxiv(config)
+    else:
+        generate_node_data(args.dataset, config)
