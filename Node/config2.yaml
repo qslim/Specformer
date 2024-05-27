@@ -39,8 +39,8 @@ citeseer:
     graph_norm_type: 'adjacency'
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
-    pair_trunc: -1
-    norm_power: [-0.5, -0.45]
+    pair_trunc: 0
+    norm_power: [-0.5, -0.45, -0.4]
 
     nclass: 6
     nlayer: 2
@@ -61,7 +61,8 @@ photo:
     graph_norm_type: 'laplacian'
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
-    pair_trunc: 'all'
+    pair_trunc: 0
+    norm_power: [-0.45, -0.4]
     
     nclass: 8
     nlayer: 2
@@ -77,6 +78,7 @@ photo:
     nonlinear: 'GELU'
     patience: 200
     residual: 'False'
+    is_f_tf: 'True'
 arxiv:
     nclass: 40
     nlayer: 1
@@ -94,6 +96,12 @@ arxiv:
     residual: 'True'
     is_f_tf: 'False'
 chameleon:
+    graph_norm_type: 'adjacency'
+    pair_norm_type: 'laplacian'
+    pair_dis_type: 'cosine'
+    pair_trunc: 0
+    norm_power: [-0.5, -0.45]
+
     nclass: 5
     nlayer: 2
     num_heads: 1
@@ -108,7 +116,13 @@ chameleon:
     nonlinear: 'GELU'
     patience: 1000
     residual: 'True'
+    is_f_tf: 'False'
 squirrel:
+    graph_norm_type: 'adjacency'
+    pair_norm_type: 'adjacency'
+    pair_dis_type: 'cosine'
+    pair_trunc: 0
+    norm_power: [-0.5, -0.45]
     nclass: 5
     nlayer: 2
     num_heads: 1
@@ -123,12 +137,19 @@ squirrel:
     nonlinear: 'ReLU'
     patience: 4000
     residual: 'True'
+    is_f_tf: 'True'
 actor:
+    graph_norm_type: 'adjacency'
+    pair_norm_type: 'adjacency'
+    pair_dis_type: 'cosine'
+    pair_trunc: 'all'
+    norm_power: [-0.5]
+
     nclass: 5
     nlayer: 3
     num_heads: 1
     hidden_dim: 32
-    epoch: 2000
+    epoch: 500
     lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.5
@@ -138,6 +159,7 @@ actor:
     nonlinear: 'GELU'
     patience: 200
     residual: 'True'
+    is_f_tf: 'True'
 penn:
     nclass: 2
     nlayer: 1
