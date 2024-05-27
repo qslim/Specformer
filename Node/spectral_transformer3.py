@@ -85,6 +85,7 @@ class Specformer(nn.Module):
             # nn.Dropout(feat_dropout),
         )
         self.classify = nn.Sequential(
+            nn.LayerNorm(hidden_dim),
             nn.Dropout(feat_dropout),
             nn.Linear(hidden_dim, nclass),
         )
@@ -95,7 +96,7 @@ class Specformer(nn.Module):
         self.mha_filter = MultiheadAttention(hidden_dim, nheads, tran_dropout)
         # self.ffn_filter = FFN(hidden_dim, tran_dropout, nonlinear)
         if is_f_tf:
-            self.mha_signal = MultiheadAttention(nclass, nheads, prop_dropout)
+            self.mha_signal = MultiheadAttention(hidden_dim, nheads, prop_dropout)
             # self.ffn_signal = FFN(nclass, prop_dropout, nonlinear)
 
         self.residual = residual

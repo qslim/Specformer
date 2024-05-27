@@ -92,6 +92,7 @@ arxiv:
     nonlinear: 'GELU'
     patience: 200
     residual: 'True'
+    is_f_tf: 'False'
 chameleon:
     nclass: 5
     nlayer: 2

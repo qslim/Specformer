@@ -232,6 +232,7 @@ def generate_node_data_arxiv(config):
     g = dgl.add_reverse_edges(g)
     g = dgl.to_simple(g)
     e, u = [], []
+    tic = time.time()
     for pow in config['norm_power']:
         norm_g = normalize_graph(g, power=pow, norm_type=config['graph_norm_type'])
         _e, _u = sp.sparse.linalg.eigsh(norm_g, k=100, which='SM', tol=1e-5)
@@ -240,6 +241,7 @@ def generate_node_data_arxiv(config):
         _e, _u = sp.sparse.linalg.eigsh(norm_g, k=100, which='LM', tol=1e-5)
         e.append(_e)
         u.append(_u)
+    print(time.time() - tic)
     e, u = np.concatenate(e, axis=0), np.concatenate(u, axis=1)
 
     e = torch.FloatTensor(e)
