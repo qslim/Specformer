@@ -80,8 +80,8 @@ class Specformer(nn.Module):
         self.feat_encoder = nn.Sequential(
             nn.Dropout(feat_dropout),
             nn.Linear(nfeat, hidden_dim),
-            nonlinear,
-            nn.Linear(hidden_dim, hidden_dim),
+            # nonlinear,
+            # nn.Linear(hidden_dim, hidden_dim),
             # nn.Dropout(feat_dropout),
         )
         self.classify = nn.Sequential(

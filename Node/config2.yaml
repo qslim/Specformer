@@ -80,11 +80,17 @@ photo:
     residual: 'False'
     is_f_tf: 'True'
 arxiv:
+    graph_norm_type: 'adjacency'
+    pair_norm_type: 'laplacian'
+    pair_dis_type: 'cosine'
+    pair_trunc: 0
+    norm_power: [-0.5]
+
     nclass: 40
     nlayer: 1
     num_heads: 1
     hidden_dim: 512
-    epoch: 2000
+    epoch: 20000
     lr: 0.001
     weight_decay: 0.0
     tran_dropout: 0.1
@@ -92,7 +98,7 @@ arxiv:
     prop_dropout: 0.1
     norm: 'layer'
     nonlinear: 'GELU'
-    patience: 200
+    patience: 20000
     residual: 'True'
     is_f_tf: 'False'
 chameleon:
