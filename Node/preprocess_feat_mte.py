@@ -233,12 +233,14 @@ def generate_node_data_arxiv(config):
     g = dgl.to_simple(g)
     e, u = [], []
     tic = time.time()
+    trunc_k = 100
+    lm_or_sm = 'LM'
     for pow in config['norm_power']:
         norm_g = normalize_graph(g, power=pow, norm_type=config['graph_norm_type'])
-        _e, _u = sp.sparse.linalg.eigsh(norm_g, k=100, which='SM', tol=1e-5)
-        e.append(_e)
-        u.append(_u)
-        _e, _u = sp.sparse.linalg.eigsh(norm_g, k=100, which='LM', tol=1e-5)
+        # _e, _u = sp.sparse.linalg.eigsh(norm_g, k=trunc_k, which='SM', tol=1e-5)
+        # e.append(_e)
+        # u.append(_u)
+        _e, _u = sp.sparse.linalg.eigsh(norm_g, k=trunc_k, which=lm_or_sm, tol=1e-5)
         e.append(_e)
         u.append(_u)
     print(time.time() - tic)
@@ -250,7 +252,8 @@ def generate_node_data_arxiv(config):
     x = g.ndata['feat']
     y = data[0][1]
 
-    torch.save([e, u, x, y], 'data/arxiv.pt')
+    torch.save([e, u], 'data/arxiv_' + str(config['graph_norm_type']) + str(config['norm_power']) + '_' + lm_or_sm + str(trunc_k) + '.pt')
+    torch.save([x, y], 'data/arxiv_feature_label.pt')
     print(e.shape)
     print(u.shape)
 
