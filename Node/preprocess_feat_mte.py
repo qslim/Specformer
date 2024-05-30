@@ -121,7 +121,7 @@ def compute_feat_graph(x, dataset, pair_dis_type='cosine'):
 
 def generate_node_data(dataset, config):
     
-    if dataset in ['cora', 'citeseer']:
+    if dataset in ['cora', 'citeseer', 'pubmed']:
 
         adj, x, y = load_data(dataset)
         adj = adj.todense()
@@ -178,6 +178,7 @@ def generate_node_data(dataset, config):
     else:
         raise NotImplementedError
 
+    tic = time.time()
     e, u = [], []
     for pow in config['norm_power']:
         _e, _u = eigh(normalize_graph(adj, power=pow, norm_type=config['graph_norm_type']))
@@ -196,6 +197,7 @@ def generate_node_data(dataset, config):
         else:
             e_feat, u_feat = e_feat[:pair_trunc], u_feat[:, :pair_trunc]
         e, u = np.concatenate((e, e_feat), axis=0), np.concatenate((u, u_feat), axis=1)
+    print(time.time() - tic)
 
     e = torch.FloatTensor(e)
     u = torch.FloatTensor(u)

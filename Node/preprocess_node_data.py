@@ -178,7 +178,7 @@ def load_fb100_dataset():
 
 def generate_node_data(dataset):
     
-    if dataset in ['cora', 'citeseer']:
+    if dataset in ['cora', 'citeseer', 'pubmed']:
 
         adj, x, y = load_data(dataset)
         adj = adj.todense()
@@ -286,5 +286,5 @@ if __name__ == '__main__':
     #generate_node_data('chameleon')
     #generate_node_data('squirrel')
     #generate_node_data('actor')
-    generate_node_data('cora')
+    generate_node_data('pubmed')
 
