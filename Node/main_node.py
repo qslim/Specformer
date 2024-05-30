@@ -32,25 +32,24 @@ def main_worker(args, config):
     prop_dropout = config['prop_dropout']
     norm = config['norm']
 
-    if 'signal' in args.dataset:
-        e, u, x, y, m = torch.load('data/{}.pt'.format(args.dataset))
-        e, u, x, y, m = e.cuda(), u.cuda(), x.cuda(), y.cuda(), m.cuda()
-        mask = torch.where(m == 1)
-        x = x[:, args.image].unsqueeze(1)
-        y = y[:, args.image]
+    if args.dataset == 'arxiv':
+        e1, u1, _, _ = torch.load('../../arxiv_dataset/arxiv_adjacency[-0.5]_LM5000_feature_label.pt'.format(args.dataset))
+        e2, u2 = torch.load('../../arxiv_dataset/arxiv_adjacency[-0.4]_LM5000.pt'.format(args.dataset))
+        e, u = torch.cat((e1, e2), dim=0), torch.cat((u1, u2), dim=1)
+        x, y = torch.load('../../arxiv_dataset/arxiv_feature_label.pt'.format(args.dataset))
     else:
         e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
-        e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
 
-        if len(y.size()) > 1:
-            if y.size(1) > 1:
-                y = torch.argmax(y, dim=1)
-            else:
-                y = y.view(-1)
+    e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
+    if len(y.size()) > 1:
+        if y.size(1) > 1:
+            y = torch.argmax(y, dim=1)
+        else:
+            y = y.view(-1)
 
-        train, valid, test = get_split(args.dataset, y, nclass, args.seed) 
-        train, valid, test = map(torch.LongTensor, (train, valid, test))
-        train, valid, test = train.cuda(), valid.cuda(), test.cuda()
+    train, valid, test = get_split(args.dataset, y, nclass, args.seed)
+    train, valid, test = map(torch.LongTensor, (train, valid, test))
+    train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
     print(e.shape)
     print(u.shape)

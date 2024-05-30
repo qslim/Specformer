@@ -84,7 +84,7 @@ arxiv:
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
     pair_trunc: 0
-    norm_power: [-0.5, -0.45]
+    norm_power: [-0.5, -0.4]
 
     nclass: 40
     nlayer: 1
