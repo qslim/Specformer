@@ -62,22 +62,22 @@ pubmed:
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
     pair_trunc: 0
-    norm_power: [-0.5]
+    norm_power: [-0.5, -0.4]
 
     nclass: 3
     nlayer: 2
     num_heads: 1
     hidden_dim: 64
     epoch: 2000
-    lr: 0.0002
-    weight_decay: 0.0001
-    tran_dropout: 0.0
-    feat_dropout: 0.8
-    prop_dropout: 0.5
+    lr: 0.001
+    weight_decay: 0.0
+    tran_dropout: 0.1
+    feat_dropout: 0.4
+    prop_dropout: 0.0
     norm: 'none'
-    nonlinear: 'GELU'
-    patience: 200
-    residual: 'True'
+    nonlinear: 'ReLU'
+    patience: 2000
+    residual: 'False'
     is_f_tf: 'False'
 photo:
     graph_norm_type: 'laplacian'

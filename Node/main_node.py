@@ -81,17 +81,14 @@ def main_worker(args, config):
     counter = 0
     evaluation = torchmetrics.Accuracy(task='multiclass', num_classes=nclass)
 
+    cur_best_a, cur_best_b, cur_best_c = 0.0, 0.0, 0.0
     for idx in range(epoch):
 
         net.train()
         optimizer.zero_grad()
         logits = net(e, u, x)
 
-        if 'signal' in args.dataset:
-            logits = logits.view(y.size())
-            loss = torch.square((logits[mask] - y[mask])).sum()
-        else:
-            loss = F.cross_entropy(logits[train], y[train])
+        loss = F.cross_entropy(logits[train], y[train])
 
         loss.backward()
         optimizer.step()
@@ -99,25 +96,26 @@ def main_worker(args, config):
         net.eval()
         logits = net(e, u, x)
 
-        if 'signal' in args.dataset:
-            logits = logits.view(y.size())
-            r2 = r2_score(y[mask].data.cpu().numpy(), logits[mask].data.cpu().numpy())
-            sse = torch.square(logits[mask] - y[mask]).sum().item()
-            print(r2, sse)
+        val_loss = F.cross_entropy(logits[valid], y[valid]).item()
+
+        val_acc = evaluation(logits[valid].cpu(), y[valid].cpu()).item()
+        test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
+        res.append([val_loss, val_acc, test_acc])
+
+        if test_acc > cur_best_a:
+            cur_best_a = test_acc
+        elif test_acc > cur_best_b:
+            cur_best_b = test_acc
+        elif test_acc > cur_best_c:
+            cur_best_c = test_acc
+
+        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}'.format(idx, val_loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a))
+
+        if val_loss < min_loss:
+            min_loss = val_loss
+            counter = 0
         else:
-            val_loss = F.cross_entropy(logits[valid], y[valid]).item()
-
-            val_acc = evaluation(logits[valid].cpu(), y[valid].cpu()).item()
-            test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
-            res.append([val_loss, val_acc, test_acc])
-
-            print(idx, val_loss, val_acc, test_acc)
-
-            if val_loss < min_loss:
-                min_loss = val_loss
-                counter = 0
-            else:
-                counter += 1
+            counter += 1
 
         if counter == patience:
             break
@@ -141,10 +139,7 @@ if __name__ == '__main__':
         config_file = 'config2.yaml'
     else:
         config_file = 'config.yaml'
-    if 'signal' in args.dataset:
-        config = yaml.load(open(config_file), Loader=yaml.SafeLoader)['signal']
-    else:
-        config = yaml.load(open(config_file), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open(config_file), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
     seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
