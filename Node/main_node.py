@@ -32,11 +32,11 @@ def main_worker(args, config):
     prop_dropout = config['prop_dropout']
     norm = config['norm']
 
-    if args.dataset == 'arxiv':
-        e1, u1, _, _ = torch.load('../../arxiv_dataset/arxiv_adjacency[-0.5]_LM5000_feature_label.pt'.format(args.dataset))
-        e2, u2 = torch.load('../../arxiv_dataset/arxiv_adjacency[-0.4]_LM5000.pt'.format(args.dataset))
+    if args.dataset in ['arxiv', 'products']:
+        e1, u1, _, _ = torch.load('../../ogbn_dataset/' + args.dataset + '_adjacency[-0.5]_LM5000_feature_label.pt'.format(args.dataset))
+        e2, u2 = torch.load('../../ogbn_dataset/' + args.dataset + '_adjacency[-0.4]_LM5000.pt'.format(args.dataset))
         e, u = torch.cat((e1, e2), dim=0), torch.cat((u1, u2), dim=1)
-        x, y = torch.load('../../arxiv_dataset/arxiv_feature_label.pt'.format(args.dataset))
+        x, y = torch.load('../../ogbn_dataset/' + args.dataset + '_feature_label.pt'.format(args.dataset))
     else:
         e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
 
@@ -60,7 +60,7 @@ def main_worker(args, config):
         patience = config['patience']
         residual = config['residual'] == 'True'
         is_f_tf = config['is_f_tf'] == 'True'
-        if args.dataset == 'arxiv':
+        if args.dataset in ['arxiv', 'products']:
             from spectral_transformer3 import Specformer
             net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
         else:

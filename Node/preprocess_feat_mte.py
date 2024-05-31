@@ -209,7 +209,7 @@ def generate_node_data(dataset, config):
     print(u.shape)
 
 
-def generate_node_data_arxiv(config):
+def generate_node_data_ogbn(dataset, config):
     def normalize_graph(g, power=-0.5, norm_type='laplacian'):
         # adj = g.adj(scipy_fmt='csr')
         adj = g.adj_external(scipy_fmt='csr')
@@ -229,7 +229,7 @@ def generate_node_data_arxiv(config):
             raise NotImplementedError
         return res
 
-    data = DglNodePropPredDataset('ogbn-arxiv')
+    data = DglNodePropPredDataset('ogbn-' + dataset)
     g = data[0][0]
     g = dgl.add_reverse_edges(g)
     g = dgl.to_simple(g)
@@ -254,8 +254,8 @@ def generate_node_data_arxiv(config):
     x = g.ndata['feat']
     y = data[0][1]
 
-    torch.save([e, u], 'data/arxiv_' + str(config['graph_norm_type']) + str(config['norm_power']) + '_' + lm_or_sm + str(trunc_k) + '.pt')
-    torch.save([x, y], 'data/arxiv_feature_label.pt')
+    torch.save([e, u], 'data/' + dataset + '_' + str(config['graph_norm_type']) + str(config['norm_power']) + '_' + lm_or_sm + str(trunc_k) + '.pt')
+    torch.save([x, y], 'data/' + dataset + '_feature_label.pt')
     print(e.shape)
     print(u.shape)
 
@@ -271,7 +271,7 @@ if __name__ == '__main__':
 
     config = yaml.load(open('config2.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
-    if args.dataset == 'arxiv':
-        generate_node_data_arxiv(config)
+    if args.dataset in ['arxiv', 'products']:
+        generate_node_data_ogbn(args.dataset, config)
     else:
         generate_node_data(args.dataset, config)
