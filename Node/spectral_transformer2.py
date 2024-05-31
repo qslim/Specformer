@@ -63,7 +63,7 @@ class FFN(nn.Module):
 class Specformer(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
-                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', residual=True, is_f_tf=False):
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', residual=True, is_f_tf=False, layer_nonlinear=True):
         super(Specformer, self).__init__()
 
         self.nfeat = nfeat
@@ -96,6 +96,7 @@ class Specformer(nn.Module):
 
         self.residual = residual
         self.is_f_tf = is_f_tf
+        self.layer_nonlinear = layer_nonlinear
 
     def forward(self, e, u, x):
         ut = u.permute(1, 0)
@@ -114,13 +115,15 @@ class Specformer(nn.Module):
             h = self.mha_signal(h)
             # h = self.ffn_signal(h)
         h = u @ h
-        h = F.gelu(h)
+        if self.layer_nonlinear:
+            h = F.gelu(h)
 
         for _ in range(self.nlayer - 1):
             utx = ut @ h
             h = new_e * utx
             h = u @ h
-            h = F.gelu(h)
+            if self.layer_nonlinear:
+                h = F.gelu(h)
 
         if self.residual:
             h = h + x

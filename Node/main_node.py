@@ -62,9 +62,13 @@ def main_worker(args, config):
         is_f_tf = config['is_f_tf'] == 'True'
         if args.dataset == 'arxiv':
             from spectral_transformer3 import Specformer
+            net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
         else:
             from spectral_transformer2 import Specformer
-        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
+            if args.dataset == 'pubmed':
+                net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf, layer_nonlinear=False).cuda()
+            else:
+                net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
     elif args.model == 'specformer':
         patience = 200
         from model_node import Specformer
