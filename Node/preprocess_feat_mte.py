@@ -137,7 +137,7 @@ def generate_node_data(dataset, config):
         x = feature_normalize(feat)
         y = data['labels']
 
-    elif dataset in ['chameleon', 'squirrel', 'actor']:
+    elif dataset in ['chameleon', 'squirrel', 'actor', 'cornell', 'texas']:
         edge_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'out1_graph_edges.txt', sep='\t')
         node_df = pd.read_csv('node_raw_data/{}/'.format(dataset) + 'out1_node_feature_label.txt', sep='\t')
         feature = node_df[node_df.columns[1]]

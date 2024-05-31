@@ -151,6 +151,28 @@ squirrel:
     patience: 4000
     residual: 'True'
     is_f_tf: 'True'
+cornell:
+    graph_norm_type: 'adjacency'
+    pair_norm_type: 'laplacian'
+    pair_dis_type: 'cosine'
+    pair_trunc: 0
+    norm_power: [-0.5]
+
+    nclass: 5
+    nlayer: 2
+    num_heads: 1
+    hidden_dim: 64
+    epoch: 2000
+    lr: 0.001
+    weight_decay: 0.00001
+    tran_dropout: 0.2
+    feat_dropout: 0.5
+    prop_dropout: 0.0
+    norm: 'none'
+    nonlinear: 'GELU'
+    patience: 1000
+    residual: 'False'
+    is_f_tf: 'False'
 actor:
     graph_norm_type: 'adjacency'
     pair_norm_type: 'adjacency'
