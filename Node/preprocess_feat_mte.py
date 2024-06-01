@@ -215,6 +215,7 @@ def generate_node_data_ogbn(dataset, config):
         adj = g.adj_external(scipy_fmt='csr')
         deg = np.array(adj.sum(axis=0)).flatten()
         deg = sp.sparse.diags(deg ** power)
+        deg[deg == 0.] = 1.0
         adj = deg.dot(adj.dot(deg))
         if norm_type == 'laplacian':
             if power == -0.5:

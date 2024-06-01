@@ -34,8 +34,8 @@ def seed_everything(seed):
 
 def get_split(dataset, y, nclass, seed=0):
     
-    if dataset == 'arxiv':
-        dataset = DglNodePropPredDataset('ogbn-arxiv')
+    if dataset in ['arxiv', 'products']:
+        dataset = DglNodePropPredDataset('ogbn-' + dataset)
         split = dataset.get_idx_split()
         train, valid, test = split['train'], split['valid'], split['test']
         return train, valid, test
