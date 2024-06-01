@@ -87,27 +87,27 @@ photo:
     residual: 'False'
     is_f_tf: 'True'
 computers:
-    graph_norm_type: 'laplacian'
+    graph_norm_type: 'adjacency'
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
     pair_trunc: 0
-    norm_power: [-0.5]
+    norm_power: [-0.5, -0.4]
 
     nclass: 10
     nlayer: 2
     num_heads: 1
-    hidden_dim: 128
+    hidden_dim: 256
     epoch: 2000
     lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.2
-    feat_dropout: 0.7
+    feat_dropout: 0.5
     prop_dropout: 0.2
     norm: 'none'
-    nonlinear: 'GELU'
+    nonlinear: 'ReLU'
     patience: 200
-    residual: 'False'
-    is_f_tf: 'True'
+    residual: 'True'
+    is_f_tf: 'False'
 arxiv:
     graph_norm_type: 'adjacency'
     pair_norm_type: 'laplacian'
