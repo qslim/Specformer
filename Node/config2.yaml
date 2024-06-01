@@ -150,7 +150,7 @@ products:
     norm: 'layer'
     nonlinear: 'GELU'
     patience: 4000
-    residual: 'True'
+    residual: 'False'
     is_f_tf: 'False'
 chameleon:
     graph_norm_type: 'adjacency'
