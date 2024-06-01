@@ -101,7 +101,7 @@ computers:
     lr: 0.001
     weight_decay: 0.0001
     tran_dropout: 0.2
-    feat_dropout: 0.5
+    feat_dropout: 0.7
     prop_dropout: 0.2
     norm: 'none'
     nonlinear: 'GELU'
