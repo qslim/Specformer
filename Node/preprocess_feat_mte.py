@@ -128,8 +128,8 @@ def generate_node_data(dataset, config):
         x = x.todense()
         x = feature_normalize(x)
 
-    elif dataset in ['photo']:
-        data = np.load('node_raw_data/amazon_electronics_photo.npz', allow_pickle=True)
+    elif dataset in ['photo', 'computers']:
+        data = np.load('node_raw_data/amazon_electronics_' + dataset + '.npz', allow_pickle=True)
         adj = sp.sparse.csr_matrix((data['adj_data'], data['adj_indices'], data['adj_indptr']), 
                             shape=data['adj_shape']).toarray()
         feat = sp.sparse.csr_matrix((data['attr_data'], data['attr_indices'], data['attr_indptr']), 
