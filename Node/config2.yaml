@@ -91,7 +91,7 @@ computers:
     pair_norm_type: 'laplacian'
     pair_dis_type: 'cosine'
     pair_trunc: 0
-    norm_power: [-0.5, -0.4]
+    norm_power: [-0.5, -0.45]
 
     nclass: 10
     nlayer: 2
@@ -107,7 +107,7 @@ computers:
     nonlinear: 'ReLU'
     patience: 200
     residual: 'True'
-    is_f_tf: 'False'
+    is_f_tf: 'True'
 arxiv:
     graph_norm_type: 'adjacency'
     pair_norm_type: 'laplacian'
