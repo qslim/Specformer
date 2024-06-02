@@ -12,6 +12,7 @@ import numpy as np
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 import pandas as pd
 import networkx as nx
+from sklearn.preprocessing import label_binarize
 import dgl
 import torch
 from numpy.linalg import eig, eigh
@@ -230,8 +231,40 @@ def generate_node_data_ogbn(dataset, config):
             raise NotImplementedError
         return res
 
-    data = DglNodePropPredDataset('ogbn-' + dataset)
-    g = data[0][0]
+    def load_fb100_dataset():
+        mat = io.loadmat('node_raw_data/Penn94.mat')
+        A = mat['A']
+        metadata = mat['local_info']
+
+        edge_index = A.nonzero()
+        metadata = metadata.astype(int)
+        label = metadata[:, 1] - 1  # gender label, -1 means unlabeled
+
+        # make features into one-hot encodings
+        feature_vals = np.hstack((np.expand_dims(metadata[:, 0], 1), metadata[:, 2:]))
+        features = np.empty((A.shape[0], 0))
+        for col in range(feature_vals.shape[1]):
+            feat_col = feature_vals[:, col]
+            feat_onehot = label_binarize(feat_col, classes=np.unique(feat_col))
+            features = np.hstack((features, feat_onehot))
+
+        node_feat = torch.tensor(features, dtype=torch.float)
+        num_nodes = metadata.shape[0]
+        label = torch.LongTensor(label)
+
+        g = dgl.graph((edge_index[0], edge_index[1]), num_nodes=num_nodes)
+
+        return g, node_feat, label
+
+    if dataset in ['arxiv', 'products']:
+        data = DglNodePropPredDataset('ogbn-' + dataset)
+        g = data[0][0]
+        x = g.ndata['feat']
+        y = data[0][1]
+    elif dataset == 'penn':
+        g, x, y = load_fb100_dataset()
+    else:
+        raise NotImplementedError
     g = dgl.add_reverse_edges(g)
     g = dgl.to_simple(g)
     e, u = [], []
@@ -251,9 +284,6 @@ def generate_node_data_ogbn(dataset, config):
 
     e = torch.FloatTensor(e)
     u = torch.FloatTensor(u)
-
-    x = g.ndata['feat']
-    y = data[0][1]
 
     torch.save([e, u], 'data/' + dataset + '_' + str(config['graph_norm_type']) + str(config['norm_power']) + '_' + lm_or_sm + str(trunc_k) + '.pt')
     torch.save([x, y], 'data/' + dataset + '_feature_label.pt')
