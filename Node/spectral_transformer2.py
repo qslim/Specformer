@@ -109,6 +109,8 @@ class Specformer(nn.Module):
         # eig = self.ffn_filter(eig)
         new_e = self.decoder(eig)  # [N, m]
 
+        # new_e = e.unsqueeze(-1)
+
         utx = ut @ h
         h = new_e * utx
         if self.is_f_tf:
@@ -128,4 +130,4 @@ class Specformer(nn.Module):
         if self.residual:
             h = h + x
 
-        return h
+        return h, new_e.squeeze()

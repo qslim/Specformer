@@ -14,6 +14,48 @@ from utils import count_parameters, init_params, seed_everything, get_split
 from result_stat.result_append import result_append
 
 
+# def y_smoothness(e, u, y):
+#     # print(u.shape)
+#     y = y.float()
+#     # print(y.shape)
+#     utx = u.permute(1, 0) @ y.unsqueeze(-1)
+#     # print(utx.shape)
+#     _aggregated = e.unsqueeze(-1) * utx
+#     aggregated = u @ _aggregated
+#     # print(aggregated.shape)
+#
+#     lap_smooth = (y * aggregated.squeeze()).sum()
+#
+#     return lap_smooth
+
+
+def reconstruction_smoothness(filter, u, y):
+    adj = u @ (filter.unsqueeze(-1) * u.permute(1, 0))
+    # adj = adj.abs()
+
+    # # Global normalization
+    # adj = adj / adj.sum()
+
+    # # Degree normalizaion
+    # deg = adj.sum(1)
+    # deg[deg == 0.] = 1.0
+    # deg = torch.diag(deg ** -0.5)
+    # adj = deg @ adj @ deg
+
+    y_re = (y + 1.0).repeat(y.shape[0], 1)
+    _y_map = y_re - y_re.transpose(0, 1)
+    mask_diff = torch.where(_y_map == 0.0, 0.0, 1.0)
+
+    # # Reconstruction homophily 1
+    # mask_same = torch.where(_y_map != 0.0, 0.0, 1.0)
+    # y_smooth = (adj * mask_same).pow(2).sum() / (adj * mask_diff).pow(2).sum()
+
+    # Reconstruction homophily 2
+    y_smooth = (adj * mask_diff).pow(2).sum() / adj.pow(2).sum()
+
+    return y_smooth
+
+
 def main_worker(args, config):
     print(args, config)
     seed_everything(args.seed)
@@ -85,12 +127,13 @@ def main_worker(args, config):
     counter = 0
     evaluation = torchmetrics.Accuracy(task='multiclass', num_classes=nclass)
 
+    filter = None
     cur_best_a, cur_best_b, cur_best_c = 0.0, 0.0, 0.0
     for idx in range(epoch):
 
         net.train()
         optimizer.zero_grad()
-        logits = net(e, u, x)
+        logits, _ = net(e, u, x)
 
         loss = F.cross_entropy(logits[train], y[train])
 
@@ -98,7 +141,7 @@ def main_worker(args, config):
         optimizer.step()
 
         net.eval()
-        logits = net(e, u, x)
+        logits, _filter = net(e, u, x)
 
         val_loss = F.cross_entropy(logits[valid], y[valid]).item()
 
@@ -108,12 +151,13 @@ def main_worker(args, config):
 
         if test_acc > cur_best_a:
             cur_best_a = test_acc
+            filter = _filter
         elif test_acc > cur_best_b:
             cur_best_b = test_acc
         elif test_acc > cur_best_c:
             cur_best_c = test_acc
 
-        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}'.format(idx, val_loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a))
+        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}, Homo: {:.8f}'.format(idx, val_loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a, reconstruction_smoothness(_filter.detach(), u, y)))
 
         if val_loss < min_loss:
             min_loss = val_loss
@@ -123,6 +167,9 @@ def main_worker(args, config):
 
         if counter == patience:
             break
+
+    # print(y_smoothness(e, u, y))
+    print(reconstruction_smoothness(filter.detach(), u, y))
 
     max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
     max_acc2 = sorted(res, key=lambda x: x[1], reverse=True)[0][-1]
