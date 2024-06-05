@@ -31,6 +31,7 @@ from result_stat.result_append import result_append
 
 def reconstruction_smoothness(filter, u, y):
     adj = u @ (filter.unsqueeze(-1) * u.permute(1, 0))
+    # adj = torch.ones_like(adj) * 0.001
     # adj = adj.abs()
 
     # # Global normalization
