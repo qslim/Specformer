@@ -131,7 +131,9 @@ def homophily_test(adj, y):
     # y_smooth = (adj * mask_same).pow(2).sum() / (adj * mask_diff).pow(2).sum()
 
     # Reconstruction homophily 2
-    y_smooth = (adj * mask_diff).pow(2).sum() / adj.pow(2).sum()
+    adj_2 = adj
+    y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
+    # y_smooth = (adj * mask_diff).pow(2).sum() / adj.pow(2).sum()
 
     return y_smooth
 

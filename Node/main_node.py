@@ -29,7 +29,15 @@ from result_stat.result_append import result_append
 #     return lap_smooth
 
 
-def reconstruction_smoothness(filter, u, y):
+def mask_diff_computation(y):
+    y_re = (y + 1.0).repeat(y.shape[0], 1)
+    _y_map = y_re - y_re.transpose(0, 1)
+    mask_diff = torch.where(_y_map == 0.0, 0.0, 1.0)
+    return mask_diff
+
+
+def reconstruction_smoothness(filter, u, mask_diff):
+    # filter = torch.rand_like(filter)
     adj = u @ (filter.unsqueeze(-1) * u.permute(1, 0))
     # adj = torch.ones_like(adj) * 0.001
     # adj = adj.abs()
@@ -43,16 +51,15 @@ def reconstruction_smoothness(filter, u, y):
     # deg = torch.diag(deg ** -0.5)
     # adj = deg @ adj @ deg
 
-    y_re = (y + 1.0).repeat(y.shape[0], 1)
-    _y_map = y_re - y_re.transpose(0, 1)
-    mask_diff = torch.where(_y_map == 0.0, 0.0, 1.0)
-
     # # Reconstruction homophily 1
     # mask_same = torch.where(_y_map != 0.0, 0.0, 1.0)
     # y_smooth = (adj * mask_same).pow(2).sum() / (adj * mask_diff).pow(2).sum()
 
     # Reconstruction homophily 2
-    y_smooth = (adj * mask_diff).pow(2).sum() / adj.pow(2).sum()
+    adj_2 = adj.pow(2)
+    y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
+    # y_smooth = (adj * mask_diff).abs().sum() / adj.abs().sum()
+    # y_smooth = ((adj * mask_diff).abs().sum() / mask_diff.sum()) / (adj.abs().sum() / adj.shape[0] ** 2)
 
     return y_smooth.item()
 
@@ -128,6 +135,7 @@ def main_worker(args, config):
     counter = 0
     evaluation = torchmetrics.Accuracy(task='multiclass', num_classes=nclass)
 
+    mask_diff = mask_diff_computation(y)
     filter = None
     cur_best_a, cur_best_b, cur_best_c = 0.0, 0.0, 0.0
     for idx in range(epoch):
@@ -148,7 +156,7 @@ def main_worker(args, config):
 
         val_acc = evaluation(logits[valid].cpu(), y[valid].cpu()).item()
         test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
-        homophily = reconstruction_smoothness(_filter.detach(), u, y)
+        homophily = reconstruction_smoothness(_filter.detach(), u, mask_diff)
         res.append([val_loss, val_acc, test_acc, homophily])
 
         if test_acc > cur_best_a:
