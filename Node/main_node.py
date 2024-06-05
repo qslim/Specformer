@@ -54,7 +54,7 @@ def reconstruction_smoothness(filter, u, y):
     # Reconstruction homophily 2
     y_smooth = (adj * mask_diff).pow(2).sum() / adj.pow(2).sum()
 
-    return y_smooth
+    return y_smooth.item()
 
 
 def main_worker(args, config):
@@ -148,17 +148,17 @@ def main_worker(args, config):
 
         val_acc = evaluation(logits[valid].cpu(), y[valid].cpu()).item()
         test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
-        res.append([val_loss, val_acc, test_acc])
+        homophily = reconstruction_smoothness(_filter.detach(), u, y)
+        res.append([val_loss, val_acc, test_acc, homophily])
 
         if test_acc > cur_best_a:
             cur_best_a = test_acc
-            filter = _filter
         elif test_acc > cur_best_b:
             cur_best_b = test_acc
         elif test_acc > cur_best_c:
             cur_best_c = test_acc
 
-        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}, Homo: {:.8f}'.format(idx, val_loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a, reconstruction_smoothness(_filter.detach(), u, y)))
+        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}, Homo: {:.8f}'.format(idx, val_loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a, homophily))
 
         if val_loss < min_loss:
             min_loss = val_loss
@@ -169,12 +169,10 @@ def main_worker(args, config):
         if counter == patience:
             break
 
-    # print(y_smoothness(e, u, y))
-    print(reconstruction_smoothness(filter.detach(), u, y))
-
-    max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-1]
-    max_acc2 = sorted(res, key=lambda x: x[1], reverse=True)[0][-1]
-    return max_acc1, max_acc2
+    max_acc1 = sorted(res, key=lambda x: x[0], reverse=False)[0][-2]
+    _res = sorted(res, key=lambda x: x[1], reverse=True)[0]
+    max_acc2, best_homophily = _res[-2], _res[-1]
+    return max_acc1, max_acc2, best_homophily
 
 
 if __name__ == '__main__':
@@ -193,7 +191,7 @@ if __name__ == '__main__':
         config_file = 'config.yaml'
     config = yaml.load(open(config_file), Loader=yaml.SafeLoader)[args.dataset]
 
-    _acc1, _acc2 = [], []
+    _acc1, _acc2, _homo = [], [], []
     seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     config['dataset'] = args.dataset
     config['cuda'] = args.cuda
@@ -205,17 +203,19 @@ if __name__ == '__main__':
     # wandb.login()
     for seed in seeds:
         args.seed = seed
-        acc1, acc2 = main_worker(args, config)
+        acc1, acc2, homo = main_worker(args, config)
         acc1, acc2 = acc1 * 100.0, acc2 * 100.0
         print(config)
-        print(acc1, acc2)
+        print(acc1, acc2, homo)
         _acc1.append(acc1)
         _acc2.append(acc2)
+        _homo.append(homo)
 
-    _acc1, _acc2 = np.array(_acc1, dtype=float), np.array(_acc2, dtype=float)
+    _acc1, _acc2, _homo = np.array(_acc1, dtype=float), np.array(_acc2, dtype=float), np.array(_homo, dtype=float)
     ACC1 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc1), np.std(_acc1))
     ACC2 = "{:.2f} $\pm$ {:.2f}".format(np.mean(_acc2), np.std(_acc2))
-    print("Mean over {} run".format(len(seeds)), "Acc1:" + ACC1, "Auc2:" + ACC2)
+    HOMO = "{:.4f}_{:.4f}".format(np.mean(_homo), np.std(_homo))
+    print("Mean over {} run".format(len(seeds)), "Acc1:" + ACC1, "Auc2:" + ACC2, "HOMO:" + HOMO)
 
     result_append(ACC1, ACC2, config)
 
