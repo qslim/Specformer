@@ -37,7 +37,7 @@ def mask_diff_computation(y):
 
 
 def reconstruction_smoothness(filter, u, mask_diff):
-    # filter = torch.rand_like(filter)
+    # filter = torch.rand_like(filter) / filter.shape[0]
     adj = u @ (filter.unsqueeze(-1) * u.permute(1, 0))
     # adj = torch.ones_like(adj) * 0.001
     # adj = adj.abs()
@@ -60,6 +60,7 @@ def reconstruction_smoothness(filter, u, mask_diff):
     y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
     # y_smooth = (adj * mask_diff).abs().sum() / adj.abs().sum()
     # y_smooth = ((adj * mask_diff).abs().sum() / mask_diff.sum()) / (adj.abs().sum() / adj.shape[0] ** 2)
+    # y_smooth = ((adj_2 * mask_diff).sum(1) / adj_2.sum(1)).mean()
 
     return y_smooth.item()
 
