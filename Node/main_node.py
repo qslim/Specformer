@@ -62,6 +62,10 @@ def reconstruction_smoothness(filter, u, mask_diff):
     # y_smooth = ((adj * mask_diff).abs().sum() / mask_diff.sum()) / (adj.abs().sum() / adj.shape[0] ** 2)
     # y_smooth = ((adj_2 * mask_diff).sum(1) / adj_2.sum(1)).mean()
 
+    # # Reconstruction homophily 3
+    # adj_2 = (adj @ adj).abs()
+    # y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
+
     return y_smooth.item()
 
 
