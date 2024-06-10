@@ -10,6 +10,74 @@ import torch.nn.functional as F
 from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 
 
+# def y_smoothness(e, u, y):
+#     # print(u.shape)
+#     y = y.float()
+#     # print(y.shape)
+#     utx = u.permute(1, 0) @ y.unsqueeze(-1)
+#     # print(utx.shape)
+#     _aggregated = e.unsqueeze(-1) * utx
+#     aggregated = u @ _aggregated
+#     # print(aggregated.shape)
+#
+#     lap_smooth = (y * aggregated.squeeze()).sum()
+#
+#     return lap_smooth
+
+
+def mask_diff_computation(y):
+    y_re = (y + 1.0).repeat(y.shape[0], 1)
+    _y_map = y_re - y_re.transpose(0, 1)
+    mask_diff = torch.where(_y_map == 0.0, 0.0, 1.0)
+
+    # _y = (y + 1.0).unsqueeze(-1)
+    # _y_map = _y.pow(-1) @ _y.transpose(0, 1)
+    # mask_diff = torch.where(_y_map == 1.0, 0.0, 1.0)
+
+    return mask_diff
+
+
+def reconstruction_smoothness(mask_diff, filter=None, u=None, adj=None):
+    if adj is not None:
+        pass
+        # adj = torch.ones_like(adj) * 0.001
+        # adj = adj.abs()
+
+        # # Global normalization
+        # adj = adj / adj.sum()
+    elif filter is not None and u is not None:
+        # filter = torch.rand_like(filter) / filter.shape[0]
+        adj = u @ (filter.unsqueeze(-1) * u.permute(1, 0))
+        # adj = torch.ones_like(adj) * 0.001
+        # adj = adj.abs()
+
+        # Global normalization
+        # adj = adj / adj.sum()
+
+    # # Degree normalizaion
+    # deg = adj.sum(1)
+    # deg[deg == 0.] = 1.0
+    # deg = torch.diag(deg ** -0.5)
+    # adj = deg @ adj @ deg
+
+    # # Reconstruction homophily 1
+    # mask_same = torch.where(_y_map != 0.0, 0.0, 1.0)
+    # y_smooth = (adj * mask_same).pow(2).sum() / (adj * mask_diff).pow(2).sum()
+
+    # Reconstruction homophily 2
+    adj_2 = adj.pow(2)
+    y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
+    # y_smooth = (adj * mask_diff).abs().sum() / adj.abs().sum()
+    # y_smooth = ((adj * mask_diff).abs().sum() / mask_diff.sum()) / (adj.abs().sum() / adj.shape[0] ** 2)
+    # y_smooth = ((adj_2 * mask_diff).sum(1) / adj_2.sum(1)).mean()
+
+    # # Reconstruction homophily 3
+    # adj_2 = (adj @ adj).abs()
+    # y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
+
+    return y_smooth.item()
+
+
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 

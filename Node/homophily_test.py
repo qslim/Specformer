@@ -14,7 +14,7 @@ import networkx as nx
 from sklearn.preprocessing import label_binarize
 import torch
 from numpy.linalg import eig, eigh
-from utils import seed_everything
+from utils import seed_everything, mask_diff_computation, reconstruction_smoothness
 
 
 def normalize_graph(g, power, norm_type):
@@ -109,36 +109,6 @@ def generate_node_data(dataset):
     return adj, y
 
 
-def homophily_test(adj, y):
-    # adj = torch.ones_like(adj) * 0.001
-    # adj = adj.abs()
-
-    # # Global normalization
-    # adj = adj / adj.sum()
-
-    # # Degree normalizaion
-    # deg = adj.sum(1)
-    # deg[deg == 0.] = 1.0
-    # deg = torch.diag(deg ** -0.5)
-    # adj = deg @ adj @ deg
-
-    y_re = (y + 1.0).repeat(y.shape[0], 1)
-    _y_map = y_re - y_re.transpose(0, 1)
-    mask_diff = torch.where(_y_map == 0.0, 0.0, 1.0)
-
-    # # Reconstruction homophily 1
-    # mask_same = torch.where(_y_map != 0.0, 0.0, 1.0)
-    # y_smooth = (adj * mask_same).pow(2).sum() / (adj * mask_diff).pow(2).sum()
-
-    # Reconstruction homophily 2
-    adj_2 = adj.pow(2)
-    y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
-    # y_smooth = (adj * mask_diff).pow(2).sum() / adj.pow(2).sum()
-    # y_smooth = ((adj_2 * mask_diff).sum(1) / adj_2.sum(1)).mean()
-
-    return y_smooth
-
-
 adj, y = generate_node_data('cora')
 adj = normalize_graph(adj, -0.5, norm_type='adjacency')
 
@@ -150,5 +120,5 @@ if len(y.size()) > 1:
     else:
         y = y.view(-1)
 
-print(homophily_test(adj, y))
+print(reconstruction_smoothness(mask_diff=mask_diff_computation(y), adj=adj))
 
