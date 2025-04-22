@@ -62,7 +62,7 @@ def main_worker(args, config):
             from spectral_transformer3 import Specformer
             net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf)
         else:
-            from fitting_propagator import Specformer
+            from neur_propagator import Specformer
             if args.dataset == 'pubmed':
                 net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf, layer_nonlinear=False)
             else:
