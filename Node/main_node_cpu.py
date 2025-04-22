@@ -36,7 +36,7 @@ def main_worker(args, config):
         e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
 
     print(e.shape, u.shape)
-    e, u = e[:args.cut], u[:, :args.cut]
+    # e, u = e[:args.cut], u[:, :args.cut]
 
     # e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
 
@@ -62,7 +62,7 @@ def main_worker(args, config):
             from spectral_transformer3 import Specformer
             net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf)
         else:
-            from spectral_transformer2 import Specformer
+            from fitting_propagator import Specformer
             if args.dataset == 'pubmed':
                 net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf, layer_nonlinear=False)
             else:
@@ -83,7 +83,7 @@ def main_worker(args, config):
     counter = 0
     evaluation = torchmetrics.Accuracy(task='multiclass', num_classes=nclass)
 
-    cur_best_a, cur_best_b, cur_best_c = 0.0, 0.0, 0.0
+    cur_best_a, cur_best_b, cur_best_c = 9999.0, 9999.0, 9999.0
     for idx in range(epoch):
 
         net.train()
@@ -101,14 +101,15 @@ def main_worker(args, config):
         val_loss = F.cross_entropy(logits[valid], y[valid]).item()
 
         val_acc = evaluation(logits[valid].cpu(), y[valid].cpu()).item()
-        test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
+        # test_acc = evaluation(logits[test].cpu(), y[test].cpu()).item()
+        test_acc = loss
         res.append([val_loss, val_acc, test_acc])
 
-        if test_acc > cur_best_a:
+        if test_acc < cur_best_a:
             cur_best_a = test_acc
-        elif test_acc > cur_best_b:
+        elif test_acc < cur_best_b:
             cur_best_b = test_acc
-        elif test_acc > cur_best_c:
+        elif test_acc < cur_best_c:
             cur_best_c = test_acc
 
         print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}'.format(idx, loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a))

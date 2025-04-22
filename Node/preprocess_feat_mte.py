@@ -178,10 +178,10 @@ def generate_node_data(dataset, config):
 
     tic = time.time()
     e, u = [], []
-    for pow in config['norm_power']:
+    for i, pow in enumerate(config['norm_power']):
         _e, _u = eigh(normalize_graph(adj, power=pow, norm_type=config['graph_norm_type']))
-        e.append(_e)
-        u.append(_u)
+        e.append(_e[:config['norm_power_len'][i]])
+        u.append(_u[:, :config['norm_power_len'][i]])
     e, u = np.concatenate(e, axis=0), np.concatenate(u, axis=1)
 
     if config['pair_trunc'] != 0:
