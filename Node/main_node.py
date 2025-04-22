@@ -113,7 +113,7 @@ def main_worker(args, config):
         elif test_acc > cur_best_c:
             cur_best_c = test_acc
 
-        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}'.format(idx, val_loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a))
+        print('{}, {:.8f}, {:.8f}, {:.8f}               {:.8f}, {:.8f}, {:.8f}'.format(idx, loss, val_acc, test_acc, cur_best_c, cur_best_b, cur_best_a))
 
         if val_loss < min_loss:
             min_loss = val_loss
