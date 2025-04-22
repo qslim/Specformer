@@ -54,6 +54,8 @@ def reconstruction_smoothness(mask_diff, filter=None, u=None, adj=None):
         # Global normalization
         # adj = adj / adj.sum()
 
+    adj = adj * (torch.ones_like(adj) - torch.eye(adj.shape[0], device=adj.device))
+
     # # Degree normalizaion
     # deg = adj.sum(1)
     # deg[deg == 0.] = 1.0
@@ -65,14 +67,14 @@ def reconstruction_smoothness(mask_diff, filter=None, u=None, adj=None):
     # y_smooth = (adj * mask_same).pow(2).sum() / (adj * mask_diff).pow(2).sum()
 
     # Reconstruction homophily 2
-    adj_2 = adj.pow(2)
-    y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
+    # adj_2 = adj.pow(2)
+    # y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
     # y_smooth = (adj * mask_diff).abs().sum() / adj.abs().sum()
-    # y_smooth = ((adj * mask_diff).abs().sum() / mask_diff.sum()) / (adj.abs().sum() / adj.shape[0] ** 2)
+    y_smooth = ((adj * mask_diff).abs().sum() / mask_diff.sum()) / (adj.abs().sum() / (adj.shape[0] ** 2))
     # y_smooth = ((adj_2 * mask_diff).sum(1) / adj_2.sum(1)).mean()
 
     # # Reconstruction homophily 3
-    # adj_2 = (adj @ adj).abs()
+    # adj_2 = (adj @ adj).pow(2)
     # y_smooth = (adj_2 * mask_diff).sum() / adj_2.sum()
 
     return y_smooth.item()
