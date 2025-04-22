@@ -41,7 +41,8 @@ def main_worker(args, config):
         e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
 
     print(e.shape, u.shape)
-    e, u = e[:500], u[:, :500]
+    e, u = e[:args.cut], u[:, :args.cut]
+    
     e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
     if len(y.size()) > 1:
         if y.size(1) > 1:
@@ -53,8 +54,7 @@ def main_worker(args, config):
     train, valid, test = map(torch.LongTensor, (train, valid, test))
     train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
-    print(e.shape)
-    print(u.shape)
+    print(e.shape, u.shape)
 
     nfeat = x.size(1)
     if args.model == 'spectral_transformer':
@@ -138,6 +138,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset', default='cora')
     parser.add_argument('--image', type=int, default=0)
     parser.add_argument('--model', default='spectral_transformer')
+    parser.add_argument('--cut', type=int, default=-1)
 
     args = parser.parse_args()
 
