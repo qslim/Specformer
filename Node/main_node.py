@@ -40,6 +40,8 @@ def main_worker(args, config):
     else:
         e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
 
+    print(e.shape, u.shape)
+    e, u = e[:500], u[:, :500]
     e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
     if len(y.size()) > 1:
         if y.size(1) > 1:
