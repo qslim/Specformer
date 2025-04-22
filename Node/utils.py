@@ -2,12 +2,9 @@ import time
 import math
 import random
 import numpy as np
-import scipy as sp
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from ogb.nodeproppred.dataset_dgl import DglNodePropPredDataset
 
 
 def count_parameters(model):
@@ -33,7 +30,7 @@ def seed_everything(seed):
 
 
 def get_split(dataset, y, nclass, seed=0):
-    
+
     if dataset in ['arxiv', 'products']:
         dataset = DglNodePropPredDataset('ogbn-' + dataset)
         split = dataset.get_idx_split()

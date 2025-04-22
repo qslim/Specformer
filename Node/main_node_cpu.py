@@ -38,7 +38,8 @@ def main_worker(args, config):
     print(e.shape, u.shape)
     e, u = e[:args.cut], u[:, :args.cut]
 
-    e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
+    # e, u, x, y = e.cuda(), u.cuda(), x.cuda(), y.cuda()
+
     if len(y.size()) > 1:
         if y.size(1) > 1:
             y = torch.argmax(y, dim=1)
@@ -47,7 +48,7 @@ def main_worker(args, config):
 
     train, valid, test = get_split(args.dataset, y, nclass, args.seed)
     train, valid, test = map(torch.LongTensor, (train, valid, test))
-    train, valid, test = train.cuda(), valid.cuda(), test.cuda()
+    # train, valid, test = train.cuda(), valid.cuda(), test.cuda()
 
     print(e.shape, u.shape)
 
@@ -59,17 +60,17 @@ def main_worker(args, config):
         is_f_tf = config['is_f_tf'] == 'True'
         if args.dataset in ['arxiv', 'products']:
             from spectral_transformer3 import Specformer
-            net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
+            net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf)
         else:
             from spectral_transformer2 import Specformer
             if args.dataset == 'pubmed':
-                net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf, layer_nonlinear=False).cuda()
+                net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf, layer_nonlinear=False)
             else:
-                net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
+                net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf)
     elif args.model == 'specformer':
         patience = 200
         from model_node import Specformer
-        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
+        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm)
     else:
         raise NotImplementedError
     net.apply(init_params)

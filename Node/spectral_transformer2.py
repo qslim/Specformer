@@ -1,11 +1,8 @@
 import time
 import math
-import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from torch.nn.init import xavier_uniform_, xavier_normal_, constant_
 
 
 class SineEncoding(nn.Module):
