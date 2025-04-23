@@ -12,15 +12,15 @@ cora:
     nlayer: 2
     num_heads: 1
     hidden_dim: 64  # poly degree=3,5,7 verified
-    epoch: 2000
-    lr: 0.001  # poly 0.01
+    epoch: 2000  # heatmap 20000
+    lr: 0.001  # poly/heatmap 0.01
     weight_decay: 0.00001
     tran_dropout: 0.2
     feat_dropout: 0.8
     prop_dropout: 0.4
     norm: 'none'
     nonlinear: 'ReLU'
-    patience: 2000
+    patience: 2000  # heatmap 20000
     residual: 'True'  # poly False
     is_f_tf: 'True'
 citeseer:
@@ -166,21 +166,21 @@ chameleon:
     pair_trunc: 0
     norm_power: [-0.5, -0.45]
 #    norm_power: [-0.5, -0.4, -0.3, -0.2, -0.1]
-#    norm_power_len: [20, 20, 20, 20, 20]
+#    norm_power_len: [-20, -20, -20, -20, -20]
 
     nclass: 5
     nlayer: 2
     num_heads: 1
     hidden_dim: 64
-    epoch: 2000
-    lr: 0.001
+    epoch: 2000  # heatmap 20000
+    lr: 0.001  # heatmap 0.01
     weight_decay: 0.0005
     tran_dropout: 0.2
     feat_dropout: 0.8
     prop_dropout: 0.2
     norm: 'none'
     nonlinear: 'GELU'
-    patience: 1000
+    patience: 1000  # heatmap 20000
     residual: 'True'
     is_f_tf: 'False'
 squirrel:
@@ -196,15 +196,15 @@ squirrel:
     nlayer: 2
     num_heads: 1
     hidden_dim: 64
-    epoch: 5000
-    lr: 0.001
+    epoch: 5000  # heatmap 40000
+    lr: 0.001  # heatmap 0.01
     weight_decay: 0.0001
     tran_dropout: 0.1
     feat_dropout: 0.4
     prop_dropout: 0.4
     norm: 'none'
     nonlinear: 'ReLU'
-    patience: 4000
+    patience: 4000  # heatmap 40000
     residual: 'True'
     is_f_tf: 'True'
 texas:
