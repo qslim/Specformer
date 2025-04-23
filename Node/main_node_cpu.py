@@ -8,6 +8,7 @@ import torchmetrics
 from utils import count_parameters, init_params, seed_everything, get_split
 from result_stat.result_append import result_append
 
+# torch.set_printoptions(threshold=float('inf'), linewidth=200, profile='full')
 
 def main_worker(args, config):
     print(args, config)
@@ -34,6 +35,11 @@ def main_worker(args, config):
         x, y = torch.load('../../ogbn_dataset/' + args.dataset + '_feature_label.pt'.format(args.dataset))
     else:
         e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
+
+    # cov_matrix = torch.cov(u.T, correction=1)
+    # cov_matrix = u.T @ u
+    # print(cov_matrix)
+
 
     print(e.shape, u.shape)
     # e, u = e[:args.cut], u[:, :args.cut]

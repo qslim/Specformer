@@ -180,8 +180,13 @@ def generate_node_data(dataset, config):
     e, u = [], []
     for i, pow in enumerate(config['norm_power']):
         _e, _u = eigh(normalize_graph(adj, power=pow, norm_type=config['graph_norm_type']))
-        e.append(_e[:config['norm_power_len'][i]])
-        u.append(_u[:, :config['norm_power_len'][i]])
+        idx = config['norm_power_len'][i]
+        if idx < 0:
+            e.append(_e[idx:])
+            u.append(_u[:, idx:])
+        else:
+            e.append(_e[:idx])
+            u.append(_u[:, :idx])
     e, u = np.concatenate(e, axis=0), np.concatenate(u, axis=1)
 
     if config['pair_trunc'] != 0:
