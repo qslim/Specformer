@@ -207,7 +207,10 @@ def generate_node_data(dataset, config):
     x = torch.FloatTensor(x)
     y = torch.LongTensor(y)
 
-    torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))
+    if config['norm_power_len'][0] < 0:
+        torch.save([e, u, x, y], 'data/{}_desc.pt'.format(dataset))
+    else:
+        torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))
     print(e.shape)
     print(u.shape)
 
