@@ -25,12 +25,15 @@ def normalize_graph(g, power=-0.5, norm_type='laplacian'):
     deg = np.diag(deg ** power)
     adj = np.dot(np.dot(deg, g), deg)
     if norm_type == 'laplacian':
-        if power == -0.5:
-            _deg = np.eye(g.shape[0])
-        else:
-            _deg = adj.sum(axis=1).reshape(-1)
-            # _deg[_deg == 0.] = 1.0
-            _deg = np.diag(_deg)
+        # if power == -0.5:
+        #     _deg = np.eye(g.shape[0])
+        # else:
+        #     _deg = adj.sum(axis=1).reshape(-1)
+        #     # _deg[_deg == 0.] = 1.0
+        #     _deg = np.diag(_deg)
+        _deg = adj.sum(axis=1).reshape(-1)
+        # _deg[_deg == 0.] = 1.0
+        _deg = np.diag(_deg)
         res = _deg - adj
     elif norm_type == 'adjacency':
         res = adj
@@ -207,7 +210,7 @@ def generate_node_data(dataset, config):
     x = torch.FloatTensor(x)
     y = torch.LongTensor(y)
 
-    if config['norm_power_len'][0] < 0:
+    if config['graph_norm_type'] == 'laplacian':
         torch.save([e, u, x, y], 'data/{}_desc.pt'.format(dataset))
     else:
         torch.save([e, u, x, y], 'data/{}.pt'.format(dataset))

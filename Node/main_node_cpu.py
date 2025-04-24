@@ -34,7 +34,7 @@ def main_worker(args, config):
         e, u = torch.cat((e1, e2), dim=0), torch.cat((u1, u2), dim=1)
         x, y = torch.load('../../ogbn_dataset/' + args.dataset + '_feature_label.pt'.format(args.dataset))
     else:
-        if config['norm_power_len'][0] < 0:
+        if config['graph_norm_type'] == 'laplacian':
             e, u, x, y = torch.load('data/{}_desc.pt'.format(args.dataset))
         else:
             e, u, x, y = torch.load('data/{}.pt'.format(args.dataset))
