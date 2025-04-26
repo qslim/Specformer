@@ -203,6 +203,7 @@ def generate_node_data(dataset, config):
         else:
             e_feat, u_feat = e_feat[:pair_trunc], u_feat[:, :pair_trunc]
         e, u = np.concatenate((e, e_feat), axis=0), np.concatenate((u, u_feat), axis=1)
+        # e, u = np.concatenate((e_feat, e), axis=0), np.concatenate((u_feat, u), axis=1)
     print(time.time() - tic)
 
     e = torch.FloatTensor(e)
