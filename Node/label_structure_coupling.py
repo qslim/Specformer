@@ -129,3 +129,78 @@ class LabelStructureCoupling(nn.Module):
             h = h + x
 
         return h
+
+
+class LabelStructureCoupling2(nn.Module):
+
+    def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
+                 tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', residual=True, is_f_tf=False):
+        super(LabelStructureCoupling2, self).__init__()
+
+        self.nfeat = nfeat
+        self.nlayer = nlayer
+        self.nheads = nheads
+        self.hidden_dim = hidden_dim
+
+        if nonlinear == 'ReLU':
+            nonlinear = nn.ReLU()
+        elif nonlinear == 'GELU':
+            nonlinear = nn.GELU()
+        else:
+            raise NotImplementedError
+        self.feat_encoder = nn.Sequential(
+            nn.Dropout(feat_dropout),
+            nn.Linear(nfeat, hidden_dim),
+            # nonlinear,
+            # nn.Linear(hidden_dim, hidden_dim),
+            # nn.Dropout(feat_dropout),
+        )
+        self.classify = nn.Sequential(
+            nn.LayerNorm(hidden_dim),
+            nn.Dropout(feat_dropout),
+            nn.Linear(hidden_dim, nclass),
+        )
+
+        self.eig_encoder = SineEncoding(hidden_dim)
+        self.decoder = nn.Linear(hidden_dim, 1)
+
+        self.mha_filter = MultiheadAttention(hidden_dim, nheads, tran_dropout)
+        # self.ffn_filter = FFN(hidden_dim, tran_dropout, nonlinear)
+        if is_f_tf:
+            self.mha_signal = MultiheadAttention(hidden_dim, nheads, prop_dropout)
+            # self.ffn_signal = FFN(nclass, prop_dropout, nonlinear)
+
+        self.residual = residual
+        self.is_f_tf = is_f_tf
+
+    def forward(self, e, u, x):
+        ut = u.permute(1, 0)
+        h = self.feat_encoder(x)
+
+        x = h
+
+        eig = self.eig_encoder(e)  # [N, d]
+        eig = self.mha_filter(eig)
+        # eig = self.ffn_filter(eig)
+        new_e = self.decoder(eig)  # [N, m]
+
+        utx = ut @ h
+        h = new_e * utx
+        if self.is_f_tf:
+            h = self.mha_signal(h)
+            # h = self.ffn_signal(h)
+        h = u @ h
+        h = F.gelu(h)
+
+        for _ in range(self.nlayer - 1):
+            utx = ut @ h
+            h = new_e * utx
+            h = u @ h
+            h = F.gelu(h)
+
+        if self.residual:
+            h = h + x
+
+        h = self.classify(h)
+
+        return h
