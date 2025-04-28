@@ -300,7 +300,7 @@ if __name__ == '__main__':
 
     seed_everything(args.seed)
 
-    config = yaml.load(open('config2.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
     if args.dataset in ['arxiv', 'products']:
         generate_node_data_ogbn(args.dataset, config)

@@ -55,7 +55,7 @@ def main_worker(args, config):
     print(u.shape)
 
     nfeat = x.size(1)
-    if args.model == 'spectral_transformer':
+    if args.model == 'label_structure_coupling':
         nonlinear = config['nonlinear']
         patience = config['patience']
         residual = config['residual'] == 'True'
@@ -131,11 +131,11 @@ if __name__ == '__main__':
     parser.add_argument('--cuda', type=int, default=0)
     parser.add_argument('--dataset', default='cora')
     parser.add_argument('--image', type=int, default=0)
-    parser.add_argument('--model', default='spectral_transformer')
+    parser.add_argument('--model', default='label_structure_coupling')
 
     args = parser.parse_args()
 
-    config = yaml.load(open('config2.yaml'), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('config.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
     seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
