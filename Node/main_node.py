@@ -69,10 +69,6 @@ def main_worker(args, config):
                 net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf, layer_nonlinear=False).cuda()
             else:
                 net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, nonlinear, residual, is_f_tf).cuda()
-    elif args.model == 'specformer':
-        patience = 200
-        from model_node import Specformer
-        net = Specformer(nclass, nfeat, nlayer, hidden_dim, num_heads, tran_dropout, feat_dropout, prop_dropout, norm).cuda()
     else:
         raise NotImplementedError
     net.apply(init_params)
@@ -139,11 +135,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if args.model == 'spectral_transformer':
-        config_file = 'config2.yaml'
-    else:
-        config_file = 'config.yaml'
-    config = yaml.load(open(config_file), Loader=yaml.SafeLoader)[args.dataset]
+    config = yaml.load(open('config2.yaml'), Loader=yaml.SafeLoader)[args.dataset]
 
     _acc1, _acc2 = [], []
     seeds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
