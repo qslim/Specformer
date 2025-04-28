@@ -60,11 +60,11 @@ class FFN(nn.Module):
         return x
 
 
-class Specformer(nn.Module):
+class LabelStructureCoupling(nn.Module):
 
     def __init__(self, nclass, nfeat, nlayer=1, hidden_dim=128, nheads=1,
                  tran_dropout=0.0, feat_dropout=0.0, prop_dropout=0.0, nonlinear='GELU', residual=True, is_f_tf=False):
-        super(Specformer, self).__init__()
+        super(LabelStructureCoupling, self).__init__()
 
         self.nfeat = nfeat
         self.nlayer = nlayer
